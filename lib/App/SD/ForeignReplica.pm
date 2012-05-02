@@ -34,8 +34,8 @@ sub save_username_and_token {
     $self->app_handle->handle->after_initialize( sub { shift->app_handle->set_db_defaults } );
     $self->app_handle->handle->initialize;
 
-    my $replica_username_key = 'replica.' . $self->scheme . ":" . $self->{url} . '.username';
-    my $replica_token_key    = 'replica.' . $self->scheme . ":" . $self->{url} . '.secret_token';
+    my $replica_username_key = 'replica.' . $self->{url} . '.username';
+    my $replica_token_key    = 'replica.' . $self->{url} . '.secret_token';
 
     if ( !$self->app_handle->config->get( key => $replica_username_key ) ) {
         print "Setting replica's username and token in the config file";
@@ -407,6 +407,8 @@ params:
 - secret_prompt   # optional; custom secret prompt
 - login_callback  # coderef of code that attempts login; should throw exception
                   # on error
+- oauth_callback  # coderef of code that returns an oauth token; should throw exception
+                  # on error
 - catch_callback  # optional; process thrown exception message (e.g. munge
                   # in some way and then print to STDERR)
 
@@ -451,9 +453,22 @@ sub login_loop {
             # having used saved values
             ($login_args{username}, $login_args{password}) = (undef, undef);
         };
+
+        if ($args{oauth_callback}) {
+             try {
+                $password = $args{oauth_callback}->($self);
+             } catch {
+                if ($args{catch_callback}) {
+                    $args{catch_callback}->($_);
+                }
+                else {
+                    warn "\n$_\n\n";
+                }
+            };
+        }
         $self->foreign_username($username) if ($username);
     }
-    # only save username/password if login was successful
+    # only save username/password/token if login was successful
     $self->save_username_and_token( $username, $password );
 
     return ($username, $password);

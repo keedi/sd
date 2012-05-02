@@ -14,7 +14,7 @@ use constant scheme => 'github';
 use constant pull_encoder => 'App::SD::Replica::github::PullEncoder';
 use constant push_encoder => 'App::SD::Replica::github::PushEncoder';
 
-has github     => ( isa => 'Net::GitHub::V2', is => 'rw' );
+has github     => ( isa => 'Net::GitHub::V3', is => 'rw' );
 has remote_url => ( isa => 'Str',             is => 'rw' );
 has owner      => ( isa => 'Str',             is => 'rw' );
 has repo       => ( isa => 'Str',             is => 'rw' );
@@ -66,50 +66,66 @@ sub BUILD {
         =~ m{^github:((?:(?:http|git)://.*?github.com/|git\@github.com:))?(.*?)/([^/\.]+)(?:(/|\.git))?}
         or die
         "Can't parse Github server spec. Expected github:owner/repository or github:http://github.com/owner/repository.\n";
-
-    my ( $uri, $username, $api_token );
-
+    
+    my $uri;
+    my $username = $ENV{GITHUB_USER} || $owner;
+    
+    # try in %ENV, then try our sd/config for oauth token
+    my $access_token = $ENV{GITHUB_ACCESS_TOKEN};
+    if (!defined $access_token) {
+        my $replica_token_key    = 'replica.' . $self->{url} . '.secret_token';
+        $access_token = $self->app_handle->config->get( key => $replica_token_key );
+    }
+    
     if ($server && $server =~ m!http!) {
         $uri = URI->new($server);
         if ( my $auth = $uri->userinfo ) {
-            ( $username, $api_token ) = split /:/, $auth, 2;
+            ( $username ) = split /:/, $auth, 2;
             $uri->userinfo(undef);
         }
     }
     else {
-        $uri = 'http://github.com/';
+        $uri = 'https://github.com/';
     }
+    
+    if (defined $access_token) {
+        $self->github(
+            Net::GitHub->new(
+                access_token => $access_token,
+         ) );
+    } else {
+        $self->login_loop(
+            uri      => $uri,
+            username => $username,
+            password => $ENV{GITHUB_PASS},
+            oauth_callback => sub {
+                my $oauth = shift->github->oauth;
+                my $o = $oauth->create_authorization( {
+                    scopes => ['user', 'public_repo', 'repo' ],
+                    note   => 'App::SD',
+                } );
+                return $o->{token};
+            }, 
+            secret_prompt => sub {
+                my ($uri, $username) = @_;
+                    return "GitHub password for $username: ";
+            },
+            login_callback => sub {
+                my ($self, $username, $pass) = @_;
 
-    # try loading github username & token from git configuration
-    # see http://github.com/blog/180-local-github-config
-    unless ( $api_token ) {
-        my $config = Config::GitLike::Git->new;
-        $config->load;
-        $username  = $config->get(key => 'github.user');
-        $api_token = $config->get(key => 'github.token');
+                $self->github(
+                    Net::GitHub->new(
+                        login => $username,
+                        pass => $pass,                   
+                    ) );
+                # actually do something to try logging in
+                $self->github->oauth->authorizations;
+         
+            },
+        );
     }
-
-    ($username, $api_token) = $self->login_loop(
-        uri      => $uri,
-        username => $username,
-        password => $api_token,
-        secret_prompt => sub {
-            my ($uri, $username) = @_;
-            return "GitHub API token for $username (from ${uri}account): ";
-        },
-        login_callback => sub {
-            my ($self, $username, $api_token) = @_;
-
-            $self->github(
-                Net::GitHub->new(
-                    login => $username,
-                    token => $api_token,
-                    repo  => $repo,
-                    owner => $owner,
-                ) );
-        },
-    );
-
+    
+    $self->github->set_default_user_repo($owner, $repo);
     $self->remote_url("$uri");
     $self->owner( $owner );
     $self->repo( $repo );

@@ -33,6 +33,19 @@ sub translate_ticket_state {
     $ticket->{updated_at} =
         App::SD::Util::string_to_datetime($ticket->{updated_at});
 
+    $ticket->{creator}   = $self->resolve_user_id_to( email_address => $ticket->{user}->{login} );
+    $ticket->{reporter}  = $ticket->{creator}; # no difference in github...?
+    
+    if ($ticket->{assignee}) {
+        $ticket->{owner}      = $self->resolve_user_id_to( email_address => $ticket->{assignee}->{login} );
+    }
+    
+    $ticket->{milestone}   = $ticket->{milestone}->{title};
+    $ticket->{description} =  $ticket->{body};
+    
+    # TODO check labels names to see if they match sd components
+    $ticket->{tags} = join ', ', map { $_->{name} } @{ $ticket->{labels} };
+    
     return $ticket;
 }
 
@@ -47,10 +60,14 @@ sub find_matching_tickets {
     my %query                  = (@_);
     my $last_changeset_seen_dt = $self->_only_pull_tickets_modified_after()
       || DateTime->from_epoch( epoch => 0 );
+    
     my $issue = $self->sync_source->github->issue;
-    my @updated = grep {
-        App::SD::Util::string_to_datetime($_->{updated_at}) > $last_changeset_seen_dt }
-      ( @{ $issue->list('open') }, @{ $issue->list('closed') } );
+    
+    # TODO github uses pagination, but it isn't yet supported by Net::GitHub
+    # TODO Timezones...
+    my @updated =  $issue->repos_issues({ since => $last_changeset_seen_dt });
+    push @updated, $issue->repos_issues({ since => $last_changeset_seen_dt, state => 'closed' });
+    
     return \@updated;
 }
 
@@ -132,17 +149,16 @@ sub transcode_create_txn {
     my $txn         = shift;
 
     my $ticket      = $txn->{object};
+
     my $ticket_uuid = 
           $self->sync_source->uuid_for_remote_id($ticket->{number});
-    my $creator =
-      $self->resolve_user_id_to( email_address => $ticket->{user} );
-    my $created = $txn->{timestamp};
+    
     my $changeset = Prophet::ChangeSet->new(
         {
             original_source_uuid => $ticket_uuid,
             original_sequence_no => 0,
-            creator              => $creator,
-            created              => $created->ymd . " " . $created->hms
+            creator              => $ticket->{creator},
+            created              => $txn->{timestamp}->iso8601,
         }
     );
 
@@ -154,16 +170,17 @@ sub transcode_create_txn {
         }
     );
 
-    for my $prop (qw/title state/) {
+    for my $prop (qw/title state owner creator milestone tags description reporter/) {
         $change->add_prop_change(
             name => $PROP_MAP{$prop} || $prop,
             new => $ticket->{$prop},
         );
     }
+    
     # stringify datetime before saving
     $change->add_prop_change(
         name => $PROP_MAP{created_at},
-        new  => App::SD::Util::datetime_to_string($ticket->{created_at}),
+        new  => $ticket->{created_at}->iso8601,
     );
 
     $change->add_prop_change(
@@ -201,8 +218,8 @@ sub transcode_one_txn {
             original_source_uuid => $ticket_uuid,
             original_sequence_no => $txn->{id},
             creator =>
-              $self->resolve_user_id_to( email_address => $txn->{user} ),
-            created => $txn->{created_at}->ymd . " " . $txn->{created_at}->hms
+              $self->resolve_user_id_to( email_address => $txn->{user}->{login} ),
+            created => $txn->{created_at}->iso8601,
         }
     );
 
@@ -216,8 +233,14 @@ sub _include_change_comment {
     my $self        = shift;
     my ($changeset, $ticket_uuid, $txn) = @_;
 
+    if (exists $txn->{comments}) {
+        # comments don't have comments
+        return;
+    }
+
     my $comment = $self->new_comment_creation_change();
 
+    # TODO markdown!
     if ( my $content = $txn->{body} ) {
         if ( $content !~ /^\s*$/s ) {
             $comment->add_prop_change(
@@ -227,7 +250,7 @@ sub _include_change_comment {
             $comment->add_prop_change(
                 name => 'creator',
                 new =>
-                  $self->resolve_user_id_to( email_address => $txn->{user} ),
+                  $self->resolve_user_id_to( email_address => $txn->{user}->{login} ),
             );
             $comment->add_prop_change( name => 'content', new => $content );
             $comment->add_prop_change(
@@ -248,6 +271,7 @@ sub translate_prop_status {
     return lc($status);
 }
 
+# TODO resolve user and get their email?
 sub resolve_user_id_to {
     my $self = shift;
     my $to   = shift;

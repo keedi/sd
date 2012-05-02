@@ -97,10 +97,15 @@ sub integrate_ticket_create {
     );
 
     # Build up a ticket object out of all the record's attributes
-    my $ticket = $self->sync_source->github->issue;
     my $attr = $self->_recode_props_for_integrate($change);
-    my $new =
-      $ticket->open( $attr->{title}, $attr->{body} );
+    my $new = $self->sync_source->github->issue->create_issue({
+        title => $attr->{title},
+        body => $attr->{body},
+        #assignee => "octocat",
+        #milestone => 1,
+        #labels => [],
+    });
+
     # TODO: better error handler?
     if ( $new->{error} ) {
         die "\n\n$new->{error}";
@@ -117,11 +122,18 @@ sub integrate_comment {
     );
 
     # Figure out the remote site's ticket ID for this change's record
-
     my %props = map { $_->name => $_->new_value } $change->prop_changes;
     my $ticket_id = $self->sync_source->remote_id_for_uuid( $props{'ticket'} );
-    my $ticket = $self->sync_source->github->issue();
-    $ticket->comment($ticket_id, $props{'content'});
+
+    # TODO updated comments?
+    # XXX can't set creator or date!
+    $self->sync_source->github->issue->create_comment(
+        $ticket_id,
+        {
+            body => $props{'content'},
+            
+        }
+    );
     return $ticket_id;
 }
 
