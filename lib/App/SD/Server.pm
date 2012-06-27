@@ -15,10 +15,18 @@ Returns the name this database should use to announce itself via bonjour
 =cut
 
 sub database_bonjour_name {
+    # service names must be shorter than 63 characters, valid UTF-8 and not undef
+    # XXX at least that's what avahi code says. I haven't checked the relevant RFCs!
     my $self = shift;
     my $name = $self->app_handle->setting( label => 'project_name' )->get->[0];
     my $uuid = $self->handle->db_uuid;
-    return "$name ($uuid)";
+    # just get the last part of uuid, a full one doesn't leave us much space
+    $uuid =~ m/\-([A-Za-z0-9]{12})$/;
+    $name = "$name ($1)";
+    if (length $name > 63) {
+        warn "TODO: Service name is too long. Cut chars off until it fits!";
+    }
+    return $name;
 
 }
 
