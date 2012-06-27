@@ -59,15 +59,22 @@ sub find_matching_tickets {
     my $self                   = shift;
     my %query                  = (@_);
     my $last_changeset_seen_dt = $self->_only_pull_tickets_modified_after()
-      || DateTime->from_epoch( epoch => 0 );
+      || DateTime->from_epoch( epoch => 0, time_zone  => 'GMT', );
     
     my $issue = $self->sync_source->github->issue;
-    
-    # TODO github uses pagination, but it isn't yet supported by Net::GitHub
-    # TODO Timezones...
-    my @updated =  $issue->repos_issues({ since => $last_changeset_seen_dt });
-    push @updated, $issue->repos_issues({ since => $last_changeset_seen_dt, state => 'closed' });
-    
+
+    # appending a Z to the iso8601 time as the date will be (correctly) treated as localtime
+    my @updated =  $issue->repos_issues({ since => $last_changeset_seen_dt . 'Z' });
+
+    while ($issue->has_next_page) {
+        push @updated, $issue->next_page;
+    }
+
+    push @updated, $issue->repos_issues({ since => $last_changeset_seen_dt . 'Z', state => 'closed' });    
+    while ($issue->has_next_page) {
+        push @updated, $issue->next_page;
+    }
+
     return \@updated;
 }
 

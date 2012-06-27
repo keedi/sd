@@ -56,11 +56,11 @@ recommends 'Net::Google::Code' => 0.14;
 
 feature 'GitHub sync (experimental)' => (
     -default => 0,
-    'Net::GitHub' => 0.28,
+    'Net::GitHub' => 0.44,
     'Config::GitLike' => 1.03,
 );
 
-recommends 'Net::GitHub' => 0.18;
+recommends 'Net::GitHub' => 0.44;
 
 feature 'Redmine sync (experimental)' => (
     -default => 0,

@@ -5,8 +5,17 @@ use warnings;
 use Prophet::Test;
 
 BEGIN {
-    plan skip_all => "Tests require Net::GitHub 0.18"
-        unless eval { require Net::GitHub; Net::GitHub->VERSION(0.18); 1 };
+    plan skip_all => "Tests require Net::GitHub 0.44"
+        unless eval { require Net::GitHub; Net::GitHub->VERSION(0.44); 1 };
+    
+    if (!exists $ENV{GITHUB_USER} || !exists $ENV{GITHUB_PASS}) {
+        plan skip_all => 'You need to set GITHUB_USER and GITHUB_PASS for these tests to run';
+    }
+    
+    if (!exists $ENV{GITHUB_URL}) {
+        plan skip_all => 'You need to set GITHUB_URL: e.g "owner/repo", "https://github.com/owner/repo", "git@github.com:owner/repo.git"';
+    }
+    
 }
 
 plan tests => 8;
@@ -19,8 +28,7 @@ BEGIN {
     diag "export SD_REPO=" . $ENV{'PROPHET_REPO'} . "\n";
 }
 
-my $url           = 'http://root:password@github.com/fayland/perl-net-github';
-my $sd_github_url = "github:$url";
+my $sd_github_url = "github:" . $ENV{GITHUB_URL};
 
 my ( $ret, $out, $err );
 ( $ret, $out, $err ) =

@@ -63,12 +63,12 @@ sub BUILD {
 
     my ( $server, $owner, $repo )
         = $self->{url}
-        =~ m{^github:((?:(?:http|git)://.*?github.com/|git\@github.com:))?(.*?)/([^/\.]+)(?:(/|\.git))?}
+        =~ m{^github:((?:(?:https*|git)://.*?github.com/|git\@github.com:))?(.*?)/([^/\.]+)(?:(/|\.git))?}
         or die
-        "Can't parse Github server spec. Expected github:owner/repository or github:http://github.com/owner/repository.\n";
+        "Can't parse Github server spec. Expected github:owner/repository or github:https://github.com/owner/repository.\n";
     
     my $uri;
-    my $username = $ENV{GITHUB_USER} || $owner;
+    my $username;
     
     # try in %ENV, then try our sd/config for oauth token
     my $access_token = $ENV{GITHUB_ACCESS_TOKEN};
@@ -88,6 +88,11 @@ sub BUILD {
         $uri = 'https://github.com/';
     }
     
+    # ENV always overrides anything else
+    if (exists $ENV{GITHUB_USER}) {
+        $username = $ENV{GITHUB_USER};
+    }
+        
     if (defined $access_token) {
         $self->github(
             Net::GitHub->new(
@@ -96,7 +101,7 @@ sub BUILD {
     } else {
         $self->login_loop(
             uri      => $uri,
-            username => $username,
+            username => $username || $owner,
             password => $ENV{GITHUB_PASS},
             oauth_callback => sub {
                 my $oauth = shift->github->oauth;
@@ -112,7 +117,6 @@ sub BUILD {
             },
             login_callback => sub {
                 my ($self, $username, $pass) = @_;
-
                 $self->github(
                     Net::GitHub->new(
                         login => $username,
