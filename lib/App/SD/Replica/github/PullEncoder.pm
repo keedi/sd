@@ -13,6 +13,13 @@ has sync_source => (
     is  => 'rw',
 );
 
+has gh_users => (
+    is  => 'rw',
+    isa => 'HashRef',
+    lazy => 1,
+    default => sub {{}},
+);
+
 my %PROP_MAP = %App::SD::Replica::github::PROP_MAP;
 
 sub ticket_id {
@@ -278,12 +285,25 @@ sub translate_prop_status {
     return lc($status);
 }
 
-# TODO resolve user and get their email?
 sub resolve_user_id_to {
-    my $self = shift;
-    my $to   = shift;
-    my $id   = shift;
-    return $id . '@github';
+    my ($self, $to, $id) = @_;
+    
+    if (exists $self->gh_users->{$id}) {
+        return $self->gh_users->{$id};
+    }
+
+    my $email;
+    my $user = $self->sync_source->github->user->show($id);
+
+    if (defined $user->{email}) {
+        $email = $user->{email};
+    } else {
+        # XXX this isn't great. A way to map github users <-> SD users would be better
+        $email = $id . '@github';
+    }
+    $self->gh_users->{$id} = $email;
+
+    return $email;
 }
 
 __PACKAGE__->meta->make_immutable;
