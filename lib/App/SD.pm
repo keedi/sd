@@ -1,10 +1,11 @@
 package App::SD;
+
+# ABSTRACT: Distributed ticket tracking system
+
 use Any::Moose;
 use App::SD::Config;
 
 extends 'Prophet::App';
-
-our $VERSION = '0.75';
 
 has '+config' => (
     default => sub {
@@ -54,10 +55,6 @@ no Any::Moose;
 1;
 
 __END__
-
-=head1 NAME
-
-App::SD - a distributed ticket tracking system
 
 =head1 DESCRIPTION
 

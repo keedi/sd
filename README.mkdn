@@ -1,0 +1,35 @@
+# NAME
+
+App::SD - Distributed ticket tracking system
+
+# VERSION
+
+version 0.001
+
+# DESCRIPTION
+
+SD is a peer to peer ticket tracking system built on the Prophet
+distributed database. SD is designed to make it easy to work with tickets
+and to share ticket databases with your collaborators.
+
+Please run `sd help` for documentation and `sd help intro` for an
+introduction to SD.
+
+# AUTHORS
+
+- Jesse Vincent <jesse@bestpractical.com>
+- Chia-Liang Kao <clkao@bestpractical.com>
+- Christine Spang <christine@spang.cc>
+
+# COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2009 by Best Practical Solutions.
+
+This is free software, licensed under:
+
+    The MIT (X11) License
+
+# BUGS AND LIMITATIONS
+
+You can make new bug reports, and view existing ones, through the
+web interface at [https://rt.cpan.org/Public/Dist/Display.html?Name=App-SD](https://rt.cpan.org/Public/Dist/Display.html?Name=App-SD).
