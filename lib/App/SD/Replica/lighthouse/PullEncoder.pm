@@ -15,7 +15,7 @@ has sync_source => (
 my %PROP_MAP = %App::SD::Replica::lighthouse::PROP_MAP;
 
 sub ticket_id {
-    my $self   = shift;
+    my $self = shift;
     return shift->number;
 }
 
@@ -54,13 +54,17 @@ sub _only_pull_tickets_modified_after {
     my $last_pull = $self->sync_source->upstream_last_modified_date();
     return unless $last_pull;
     my $before = App::SD::Util::string_to_datetime($last_pull);
-    $self->log_debug( "Failed to parse '" . $self->sync_source->upstream_last_modified_date() . "' as a timestamp. That means we have to sync ALL history") unless ($before);
+    $self->log_debug( "Failed to parse '"
+          . $self->sync_source->upstream_last_modified_date()
+          . "' as a timestamp. That means we have to sync ALL history" )
+      unless ($before);
     return $before;
 }
 
 =head2 find_matching_transactions { ticket => $id, starting_transaction => $num  }
 
-Returns a reference to an array of all transactions (as hashes) on ticket $id after transaction $num.
+Returns a reference to an array of all transactions (as hashes) on ticket $id
+after transaction $num.
 
 =cut
 
@@ -68,6 +72,7 @@ sub find_matching_transactions {
     my $self     = shift;
     my %args     = validate( @_, { ticket => 1, starting_transaction => 1 } );
     my $sequence = 0;
+
     # hack, let's add sequence for comments
     my @raw_versions =
       map { $_->{sequence} = $sequence++; $_ } $args{ticket}->versions;
@@ -75,7 +80,7 @@ sub find_matching_transactions {
 
     my @raw_txns = ( @raw_versions, @raw_attachments );
     my @txns;
-    for my $txn ( @raw_txns ) {
+    for my $txn (@raw_txns) {
         my $txn_date = $txn->created_at->epoch;
 
         # Skip things we know we've already pulled
@@ -94,7 +99,7 @@ sub find_matching_transactions {
           {
             timestamp => $txn->created_at,
             object    => $txn,
-            serial    => defined $txn->{sequence} ? $txn->{sequence} : $txn->id,
+            serial => defined $txn->{sequence} ? $txn->{sequence} : $txn->id,
           };
     }
 
@@ -103,14 +108,14 @@ sub find_matching_transactions {
 }
 
 sub transcode_create_txn {
-    my $self        = shift;
-    my $txn         = shift;
-    my $ticket      = $txn->{object};
+    my $self   = shift;
+    my $txn    = shift;
+    my $ticket = $txn->{object};
 
-    my $ticket_uuid = 
-          $self->sync_source->uuid_for_remote_id($ticket->number);
-    my $creator = $self->resolve_user_id_to( undef, $ticket->creator_name );
-    my $created = $ticket->created_at;
+    my $ticket_uuid =
+      $self->sync_source->uuid_for_remote_id( $ticket->number );
+    my $creator   = $self->resolve_user_id_to( undef, $ticket->creator_name );
+    my $created   = $ticket->created_at;
     my $changeset = Prophet::ChangeSet->new(
         {
             original_source_uuid => $ticket_uuid,
@@ -135,7 +140,7 @@ sub transcode_create_txn {
             new => $ticket->$prop,
         );
     }
-     
+
     if ( $ticket->assigned_user_id ) {
         $change->add_prop_change(
             name => 'owner',
@@ -153,7 +158,7 @@ sub transcode_create_txn {
 
     $change->add_prop_change(
         name => $self->sync_source->uuid . '-id',
-        new => $ticket->number,
+        new  => $ticket->number,
     );
 
     $changeset->add_change( { change => $change } );
@@ -166,9 +171,9 @@ sub transcode_create_txn {
 # 2 changesets if we needed to to some magic fixups.
 
 sub transcode_one_txn {
-    my $self               = shift;
-    my $txn_wrapper        = shift;
-    my $ticket = shift;
+    my $self        = shift;
+    my $txn_wrapper = shift;
+    my $ticket      = shift;
 
     my $txn = $txn_wrapper->{object};
     if ( defined $txn->{sequence} && $txn->{sequence} == 0 ) {
@@ -197,8 +202,7 @@ sub transcode_one_txn {
             changeset   => $changeset,
             attachment  => $txn,
         );
-    }
-    else {
+    } else {
         $changeset = Prophet::ChangeSet->new(
             {
                 original_source_uuid => $ticket_uuid,
@@ -246,8 +250,7 @@ sub transcode_one_txn {
                         : undef,
                         old => $old_title || $old,
                     );
-                }
-                elsif ( $attr eq ':assigned_user' ) {
+                } elsif ( $attr eq ':assigned_user' ) {
                     my $old = $diffable_attrs->{$attr};
                     my $old_with_name;
                     if ($old) {
@@ -260,8 +263,7 @@ sub transcode_one_txn {
                         eval { $user->load($old) };
                         if ($@) {
                             warn "can't load user $old on lighthouse";
-                        }
-                        else {
+                        } else {
                             $old_with_name =
                               $user->name . '(' . $user->id . ')';
                         }
@@ -275,8 +277,7 @@ sub transcode_one_txn {
                         : undef,
                         $old_with_name ? ( old => $old_with_name ) : (),
                     );
-                }
-                else {
+                } else {
 
                     $change->add_prop_change(
                         name => $PROP_MAP{ $hash{$attr} } || $hash{$attr},
@@ -313,14 +314,18 @@ sub _include_change_comment {
             );
             $comment->add_prop_change(
                 name => 'creator',
-                new  => $self->resolve_user_id_to( undef => $txn->creator_name ),
+                new =>
+                  $self->resolve_user_id_to( undef => $txn->creator_name ),
             );
             $comment->add_prop_change( name => 'content', new => $content );
             $comment->add_prop_change(
                 name => 'content_type',
                 new  => 'text/plain',
             );
-            $comment->add_prop_change( name => 'ticket', new => $ticket_uuid, );
+            $comment->add_prop_change(
+                name => 'ticket',
+                new  => $ticket_uuid,
+            );
             $changeset->add_change( { change => $comment } );
         }
     }
@@ -329,8 +334,7 @@ sub _include_change_comment {
 sub _recode_attachment_create {
     my $self = shift;
     my %args =
-      validate( @_,
-        { ticket_uuid => 1, changeset => 1, attachment => 1 } );
+      validate( @_, { ticket_uuid => 1, changeset => 1, attachment => 1 } );
     my $change = Prophet::Change->new(
         {
             record_type => 'attachment',
@@ -358,9 +362,9 @@ sub _recode_attachment_create {
     $change->add_prop_change(
         name => 'creator',
         old  => undef,
-        new =>
-          $self->resolve_user_id_to( email_address =>
-              $args{'attachment'}->uploader_id )
+        new  => $self->resolve_user_id_to(
+            email_address => $args{'attachment'}->uploader_id
+        )
     );
 
     $change->add_prop_change(
@@ -390,17 +394,15 @@ sub translate_prop_status {
 sub resolve_user_id_to {
     my $self = shift;
     shift;
-    my $id   = shift;
+    my $id = shift;
     if ( $id =~ /^\d+$/ ) {
         my $user = Net::Lighthouse::User->new(
             map { $_ => $self->sync_source->lighthouse->$_ }
-              grep { $self->sync_source->lighthouse->$_ }
-              qw/account auth/
+            grep { $self->sync_source->lighthouse->$_ } qw/account auth/
         );
-        $user->load( $id );
+        $user->load($id);
         return $user->name;
-    }
-    else {
+    } else {
         return $id;
     }
 }

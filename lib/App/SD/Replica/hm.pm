@@ -34,30 +34,32 @@ sub BUILD {
     # Require rather than use to defer load
     try {
         require Net::Jifty;
-    } catch {
-        die "SD requires Net::Jifty to sync with a Hiveminder server.\n".
-        "'cpan Net::Jifty' may sort this out for you";
+    }
+    catch {
+        die "SD requires Net::Jifty to sync with a Hiveminder server.\n"
+          . "'cpan Net::Jifty' may sort this out for you";
     };
 
     my ( $server, $props ) = $self->{url} =~ m/^hm:(.*?)(?:\|(.*))?$/
-        or die
-        "Can't parse Hiveminder server spec. Expected hm:http://hiveminder.com or hm:http://hiveminder.com|props";
+      or die
+      "Can't parse Hiveminder server spec. Expected hm:http://hiveminder.com or hm:http://hiveminder.com|props";
 
-    my ($username, $password) = $self->extract_auth_from_uri($server);
+    my ( $username, $password ) = $self->extract_auth_from_uri($server);
 
-    if ( $password ) {
+    if ($password) {
         try {
-            $self->_hiveminder_login($username, $password);
-        } catch {
-            die "Bad username or password specified in URL! ".
-                "Error message was:\n".
-                _hiveminder_clean_login_error($_);
+            $self->_hiveminder_login( $username, $password );
+        }
+        catch {
+            die "Bad username or password specified in URL! "
+              . "Error message was:\n"
+              . _hiveminder_clean_login_error($_);
         };
-    }
-    else {
-        ($username, $password) = $self->login_loop(
+    } else {
+        ( $username, $password ) = $self->login_loop(
             uri      => $self->remote_url,
             username => $username,
+
             # remind the user that hiveminder logins are email addresses
             username_prompt => sub {
                 my $uri = shift;
@@ -79,29 +81,30 @@ sub BUILD {
 }
 
 sub _hiveminder_login {
-    my ($self, $username, $password) = @_;
+    my ( $self, $username, $password ) = @_;
     $self->hm(
         Net::Jifty->new(
             site        => $self->remote_url,
             cookie_name => 'JIFTY_SID_HIVEMINDER',
-            email    => $username,
-            password => $password
+            email       => $username,
+            password    => $password
         )
     );
 }
 
 sub _hiveminder_clean_login_error {
     my $verbose_error = shift;
+
     # Net::Jifty uses Carp::confess to deal with login problems :(
-    my $error_message = (split /\n/, $verbose_error)[0];
+    my $error_message = ( split /\n/, $verbose_error )[0];
     $error_message =~ s/ at .* line [0-9]+$//;
     return "\n$error_message\n\n";
 }
 
 sub request_failed {
-    my ($self, $response) = @_;
+    my ( $self, $response ) = @_;
 
-    return defined($response->{success}) && $response->{success} == 0;
+    return defined( $response->{success} ) && $response->{success} == 0;
 }
 
 sub decode_error {
@@ -125,24 +128,29 @@ Return the replica's UUID
 
 sub _uuid_url {
     my $self = shift;
-    return  join( '/', $self->remote_url, $self->foreign_username ) ;
+    return join( '/', $self->remote_url, $self->foreign_username );
 }
 
 sub get_txn_list_by_date {
     my $self   = shift;
     my $ticket = shift;
     my @txns   = map {
-        my $txn_created_dt = App::SD::Util::string_to_datetime( $_->{modified_at} );
+        my $txn_created_dt =
+          App::SD::Util::string_to_datetime( $_->{modified_at} );
         unless ($txn_created_dt) {
             die "Couldn't parse '" . $_->{modified_at} . "' as a timestamp";
         }
         my $txn_created = $txn_created_dt->epoch;
 
-        return { id => $_->{id}, creator => $_->{creator}, created => $txn_created }
-        }
+        return {
+            id      => $_->{id},
+            creator => $_->{creator},
+            created => $txn_created
+          }
+      }
 
-        sort { $a->{'id'} <=> $b->{'id'} }
-        @{ $self->hm->search( 'TaskTransaction', task_id => $ticket ) || [] };
+      sort { $a->{'id'} <=> $b->{'id'} }
+      @{ $self->hm->search( 'TaskTransaction', task_id => $ticket ) || [] };
 
     return @txns;
 }
@@ -150,16 +158,18 @@ sub get_txn_list_by_date {
 sub user_info {
     my $self = shift;
     my %args = @_;
-    return $self->_user_info( keys %args ? (%args) : ( email => $self->foreign_username ) );
+    return $self->_user_info(
+        keys %args ? (%args) : ( email => $self->foreign_username ) );
 }
 
 sub _user_info {
-    my $self   = shift;
-    my $key = shift;
+    my $self  = shift;
+    my $key   = shift;
     my $value = shift;
     return undef unless defined $value;
-    my $status = $self->hm->search('User', $key => $value);
+    my $status = $self->hm->search( 'User', $key => $value );
     unless ( $status->[0]->{'id'} ) {
+
         # some weird error
         warn "fatal error in _user_info\n";
         Carp::confess;
@@ -202,7 +212,7 @@ our %REV_PROP_MAP = ();
 while ( my ( $k, $v ) = each %PROP_MAP ) {
     if ( $REV_PROP_MAP{$v} ) {
         $REV_PROP_MAP{$v} = [ $REV_PROP_MAP{$v} ]
-            unless ref $REV_PROP_MAP{$v};
+          unless ref $REV_PROP_MAP{$v};
         push @{ $REV_PROP_MAP{$v} }, $k;
     } else {
         $REV_PROP_MAP{$v} = $k;

@@ -7,7 +7,6 @@ use URI;
 
 extends 'Prophet::ForeignReplica';
 
-
 has uuid => (
     lazy    => 1,
     isa     => 'Str',
@@ -20,18 +19,19 @@ has uuid => (
 
 =head2 save_username_and_token( $username, $token )
 
-Saves the given username and token to the replica-specific config file,
-so the user doesn't have to enter it every time.
+Saves the given username and token to the replica-specific config file, so the
+user doesn't have to enter it every time.
 
 =cut
 
 sub save_username_and_token {
-    my ($self, $username, $password) = @_;
+    my ( $self, $username, $password ) = @_;
 
     # make sure replica is initialized, since this method is generally called
     # in the BUILD method of an object, which makes it end up being called
     # before the initialize call in clone
-    $self->app_handle->handle->after_initialize( sub { shift->app_handle->set_db_defaults } );
+    $self->app_handle->handle->after_initialize(
+        sub { shift->app_handle->set_db_defaults } );
     $self->app_handle->handle->initialize;
 
     my $replica_username_key = 'replica.' . $self->{url} . '.username';
@@ -41,23 +41,26 @@ sub save_username_and_token {
         print "Setting replica's username and token in the config file";
         $self->app_handle->config->group_set(
             $self->app_handle->config->replica_config_file,
-         [ {
-            key      => $replica_username_key,
-            value    => $username,
-         }, {
-            key      => $replica_token_key,
-            value    => $password,
-         } ],
+            [
+                {
+                    key   => $replica_username_key,
+                    value => $username,
+                },
+                {
+                    key   => $replica_token_key,
+                    value => $password,
+                }
+            ],
         );
     }
 }
-
 
 sub integrate_changeset {
     my $self = shift;
     my %args = validate(
         @_,
-        {   changeset          => { isa      => 'Prophet::ChangeSet' },
+        {
+            changeset          => { isa      => 'Prophet::ChangeSet' },
             resolver           => { optional => 1 },
             resolver_class     => { optional => 1 },
             resdb              => { optional => 1 },
@@ -67,19 +70,19 @@ sub integrate_changeset {
     );
 
     my $changeset = $args{'changeset'};
-    return if $self->last_changeset_from_source(
-        $changeset->original_source_uuid) >= $changeset->original_sequence_no;
+    return
+      if $self->last_changeset_from_source( $changeset->original_source_uuid )
+      >= $changeset->original_sequence_no;
     $self->SUPER::integrate_changeset(%args);
 }
 
 =head2 integrate_change $change $changeset
 
-Given a change (and the changeset it's part of), this routine will load
-the push encoder for the foreign replica's type and call integrate_change
-on it.
+Given a change (and the changeset it's part of), this routine will load the
+push encoder for the foreign replica's type and call integrate_change on it.
 
-To avoid publishing prophet-private data, It skips any change with a record type
-that record_type starts with '__'.
+To avoid publishing prophet-private data, It skips any change with a record
+type that record_type starts with '__'.
 
 This is probably a bug.
 
@@ -96,10 +99,9 @@ sub integrate_change {
     # don't push internal records
     return if $change->record_type =~ /^__/;
 
-
-    Prophet::App->require( $self->push_encoder());
+    Prophet::App->require( $self->push_encoder() );
     my $recoder = $self->push_encoder->new( { sync_source => $self } );
-    $recoder->integrate_change($change,$changeset);
+    $recoder->integrate_change( $change, $changeset );
 }
 
 =head2 record_pushed_transactions
@@ -123,15 +125,21 @@ accidentally push them later.
 
 sub record_pushed_transactions {
     my $self = shift;
-    my %args = validate( @_,
-        { ticket => 1,
-          changeset => { isa => 'Prophet::ChangeSet' }, start_time => 1} );
+    my %args = validate(
+        @_,
+        {
+            ticket     => 1,
+            changeset  => { isa => 'Prophet::ChangeSet' },
+            start_time => 1
+        }
+    );
 
     my $earliest_valid_txn_date;
 
     # walk through every transaction on the ticket, starting with the latest
 
-    for my $txn ( $self->get_txn_list_by_date($args{ticket}) ) {
+    for my $txn ( $self->get_txn_list_by_date( $args{ticket} ) ) {
+
         # walk backwards through all transactions on the ticket we just updated
         # Skip any transaction where the remote user isn't me, this might
         # include any transaction RT created with a scrip on your behalf
@@ -141,20 +149,24 @@ sub record_pushed_transactions {
         # get the completion time _after_ we do our next round trip to rt to
         # try to make sure a bit of lag doesn't skew us to the wrong side of a
         # 1s boundary
-       if (!$earliest_valid_txn_date){
-            my $change_window =  time() - $args{start_time};
+        if ( !$earliest_valid_txn_date ) {
+            my $change_window = time() - $args{start_time};
+
             # skip any transaction created more than 5 seconds before the push
             # started. I can't think of any reason that number shouldn't be 1,
             # but clocks are fickle
-            $earliest_valid_txn_date = $txn->{created} - ($change_window + 5);
+            $earliest_valid_txn_date =
+              $txn->{created} - ( $change_window + 5 );
         }
 
         last if $txn->{created} < $earliest_valid_txn_date;
 
         # if the transaction id is older than the id of the last changeset
         # we got from the original source of this changeset, we're done
-        last if $txn->{id} <= $self->app_handle->handle->last_changeset_from_source(
-           $args{changeset}->original_source_uuid);
+        last
+          if $txn->{id} <=
+          $self->app_handle->handle->last_changeset_from_source(
+            $args{changeset}->original_source_uuid );
 
         # if the transaction from RT is more recent than the most recent
         # transaction we got from the original source of the changeset
@@ -168,7 +180,6 @@ sub record_pushed_transactions {
     }
 }
 
-
 =head2 record_pushed_transaction $foreign_transaction_id, $changeset
 
 Record that this replica was the original source of $foreign_transaction_id
@@ -178,64 +189,75 @@ Record that this replica was the original source of $foreign_transaction_id
 
 sub record_pushed_transaction {
     my $self = shift;
-    my %args = validate( @_,
-        { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' },
-          record => 1 } );
+    my %args = validate(
+        @_,
+        {
+            transaction => 1,
+            changeset   => { isa => 'Prophet::ChangeSet' },
+            record      => 1
+        }
+    );
 
-    my $key = join('-', "foreign-txn-from" , $self->uuid ,
-                   'record' , $args{record} , 'txn' , $args{transaction} );
-    my $value = join(':', $args{changeset}->original_source_uuid,
-                     $args{changeset}->original_sequence_no );
+    my $key = join( '-',
+        "foreign-txn-from", $self->uuid,
+        'record', $args{record}, 'txn', $args{transaction} );
+    my $value = join( ':',
+        $args{changeset}->original_source_uuid,
+        $args{changeset}->original_sequence_no );
 
-    $self->store_local_metadata($key => $value);
+    $self->store_local_metadata( $key => $value );
 
 }
 
 =head2 foreign_transaction_originated_locally $transaction_id $foreign_record_id
 
-Given a transaction id, will return true if this transaction
-originated in Prophet and was pushed to the foreign replica or
-originated in the foreign replica and has already been pulled to
-the Prophet replica.
+Given a transaction id, will return true if this transaction originated in
+Prophet and was pushed to the foreign replica or originated in the foreign
+replica and has already been pulled to the Prophet replica.
 
 
-This is a mapping of all the transactions we have pushed to the
-remote replica we'll only ever care about remote sequence #s greater
-than the last transaction # we've pulled from the remote replica
-once we've done a pull from the remote replica, we can safely expire
-all records of this type for the remote replica (they'll be
-obsolete)
+This is a mapping of all the transactions we have pushed to the remote replica
+we'll only ever care about remote sequence #s greater than the last transaction
+# we've pulled from the remote replica once we've done a pull from the remote
+replica, we can safely expire all records of this type for the remote replica
+(they'll be obsolete)
 
-We use this cache to avoid integrating changesets we've pushed to the
-remote replica when doing a subsequent pull
+We use this cache to avoid integrating changesets we've pushed to the remote
+replica when doing a subsequent pull
 
 =cut
 
 sub foreign_transaction_originated_locally {
     my $self = shift;
     my ( $id, $record ) = validate_pos( @_, 1, 1 );
-    return $self->fetch_local_metadata(
-        "foreign-txn-from-" . $self->uuid . '-record-' . $record . '-txn-' . $id );
+    return $self->fetch_local_metadata( "foreign-txn-from-"
+          . $self->uuid
+          . '-record-'
+          . $record . '-txn-'
+          . $id );
 }
 
 sub traverse_changesets {
     my $self = shift;
-    my %args = validate( @_,
-        {   after    => 1,
+    my %args = validate(
+        @_,
+        {
+            after    => 1,
             callback => 1,
-            before_load_changeset_callback => { type => CODEREF, optional => 1},
+            before_load_changeset_callback =>
+              { type => CODEREF, optional => 1 },
             reporting_callback => { type => CODEREF, optional => 1 },
         }
     );
 
-    Prophet::App->require( $self->pull_encoder());
+    Prophet::App->require( $self->pull_encoder() );
     my $recoder = $self->pull_encoder->new( { sync_source => $self } );
-    my ( $changesets ) = $recoder->run( after => $args{'after'} );
+    my ($changesets) = $recoder->run( after => $args{'after'} );
     for my $changeset (@$changesets) {
         if ( $args{'before_load_changeset_callback'} ) {
-            my $continue = $args{'before_load_changeset_callback'}->(
-                changeset_metadata => $self->_construct_changeset_index_entry($changeset)
-            );
+            my $continue =
+              $args{'before_load_changeset_callback'}->( changeset_metadata =>
+                  $self->_construct_changeset_index_entry($changeset) );
 
             next unless $continue;
         }
@@ -244,43 +266,48 @@ sub traverse_changesets {
             changeset                 => $changeset,
             after_integrate_changeset => sub {
                 $self->record_last_changeset_from_replica(
-                    $changeset->original_source_uuid => $changeset->original_sequence_no );
+                    $changeset->original_source_uuid =>
+                      $changeset->original_sequence_no );
 
                 # We're treating each individual ticket in the foreign system
                 # as its own 'replica' because of that, we need to hint to the
                 # push side of the system what the most recent txn on each
                 # ticket it has.
-                my $previously_modified
-                    = App::SD::Util::string_to_datetime(
-                       $self->upstream_last_modified_date || '');
-                my $created_datetime = App::SD::Util::string_to_datetime(
-                   $changeset->created );
-                $self->record_upstream_last_modified_date( $changeset->created )
-                    if ( ( $created_datetime ? $created_datetime->epoch : 0 )
-                    > ( $previously_modified ? $previously_modified->epoch : 0 ) );
+                my $previously_modified = App::SD::Util::string_to_datetime(
+                    $self->upstream_last_modified_date || '' );
+                my $created_datetime =
+                  App::SD::Util::string_to_datetime( $changeset->created );
+                $self->record_upstream_last_modified_date(
+                    $changeset->created )
+                  if ( ( $created_datetime ? $created_datetime->epoch : 0 ) >
+                    ( $previously_modified ? $previously_modified->epoch : 0 )
+                  );
             }
         );
-        $args{reporting_callback}->($changeset) if ($args{reporting_callback});
+        $args{reporting_callback}->($changeset)
+          if ( $args{reporting_callback} );
     }
 }
 
 sub _construct_changeset_index_entry {
-    my $self = shift;
+    my $self      = shift;
     my $changeset = shift;
 
-    return [ $changeset->sequence_no, $changeset->original_source_uuid,
-             $changeset->original_sequence_no, $changeset->calculate_sha1 ];
+    return [
+        $changeset->sequence_no,          $changeset->original_source_uuid,
+        $changeset->original_sequence_no, $changeset->calculate_sha1
+    ];
 }
 
 sub remote_uri_path_for_id {
-    die "your subclass needs to implement this to be able to ".
-        "map a remote id to /ticket/id or soemthing";
+    die "your subclass needs to implement this to be able to "
+      . "map a remote id to /ticket/id or soemthing";
 }
 
 =head2 uuid_for_remote_id $id
 
-lookup the uuid for the remote record id. If we don't find it,
-construct it out of the remote url and the remote uri path for the record id;
+lookup the uuid for the remote record id. If we don't find it, construct it out
+of the remote url and the remote uri path for the record id;
 
 =cut
 
@@ -288,7 +315,7 @@ sub uuid_for_remote_id {
     my ( $self, $id ) = @_;
 
     return $self->_lookup_uuid_for_remote_id($id)
-        ||$self->_url_based_uuid_for_remote_ticket_id( $id);
+      || $self->_url_based_uuid_for_remote_ticket_id($id);
 }
 
 sub _lookup_uuid_for_remote_id {
@@ -296,26 +323,25 @@ sub _lookup_uuid_for_remote_id {
     my ($id) = validate_pos( @_, 1 );
 
     return $self->fetch_local_metadata(
-       'local_uuid_for_'.  $self->_url_based_uuid_for_remote_ticket_id($id));
+        'local_uuid_for_' . $self->_url_based_uuid_for_remote_ticket_id($id) );
 }
 
 sub _set_uuid_for_remote_id {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, remote_id => 1 } );
-    return $self->store_local_metadata('local_uuid_for_'.
-        $self->_url_based_uuid_for_remote_ticket_id( $args{'remote_id'} ),
+    return $self->store_local_metadata(
+        'local_uuid_for_'
+          . $self->_url_based_uuid_for_remote_ticket_id( $args{'remote_id'} ),
         $args{uuid}
     );
 }
 
 sub _url_based_uuid_for_remote_ticket_id {
     my $self = shift;
-    my $id = shift;
+    my $id   = shift;
 
     return $self->uuid_for_url(
-        $self->remote_url
-        . $self->remote_uri_path_for_id( $id )
-    );
+        $self->remote_url . $self->remote_uri_path_for_id($id) );
 }
 
 # This mapping table stores uuids for tickets we've synced from a remote
@@ -329,17 +355,17 @@ sub remote_id_for_uuid {
     require App::SD::Model::Ticket;
     my $ticket = App::SD::Model::Ticket->new(
         app_handle => $self->app_handle,
-        type   => 'ticket'
+        type       => 'ticket'
     );
-    $ticket->load( $uuid_or_luid =~ /^\d+$/? 'luid': 'uuid', $uuid_or_luid )
-        or do {
-            warn "couldn't load ticket #$uuid_or_luid";
-            return undef;
-        };
+    $ticket->load( $uuid_or_luid =~ /^\d+$/ ? 'luid' : 'uuid', $uuid_or_luid )
+      or do {
+        warn "couldn't load ticket #$uuid_or_luid";
+        return undef;
+      };
 
     my $prop = $self->uuid . '-id';
-    my $id = $ticket->prop( $prop )
-        or warn "ticket #$uuid_or_luid has no property '$prop'";
+    my $id   = $ticket->prop($prop)
+      or warn "ticket #$uuid_or_luid has no property '$prop'";
     return $id;
 }
 
@@ -347,7 +373,8 @@ sub _set_remote_id_for_uuid {
     my $self = shift;
     my %args = validate(
         @_,
-        {   uuid      => 1,
+        {
+            uuid      => 1,
             remote_id => 1
         }
     );
@@ -355,10 +382,11 @@ sub _set_remote_id_for_uuid {
     require App::SD::Model::Ticket;
     my $ticket = App::SD::Model::Ticket->new(
         app_handle => $self->app_handle,
-        type   => 'ticket'
+        type       => 'ticket'
     );
     $ticket->load( uuid => $args{'uuid'} );
-    $ticket->set_props( props => { $self->uuid.'-id' => $args{'remote_id'} } );
+    $ticket->set_props(
+        props => { $self->uuid . '-id' => $args{'remote_id'} } );
 }
 
 =head2 record_remote_id_for_pushed_record
@@ -372,7 +400,8 @@ sub record_remote_id_for_pushed_record {
     my $self = shift;
     my %args = validate(
         @_,
-        {   uuid      => 1,
+        {
+            uuid      => 1,
             remote_id => 1
         }
     );
@@ -383,7 +412,7 @@ sub record_remote_id_for_pushed_record {
 sub record_upstream_last_modified_date {
     my $self = shift;
     my $date = shift;
-    return $self->store_local_metadata('last_modified_date' => $date);
+    return $self->store_local_metadata( 'last_modified_date' => $date );
 }
 
 sub upstream_last_modified_date {
@@ -396,21 +425,18 @@ sub upstream_last_modified_date {
 Loop on prompting for username/password until login is successful; user can
 abort with ^C.
 
-Saves username and password to the replica's configuration file
-upon successful login.
+Saves username and password to the replica's configuration file upon successful
+login.
 
-params:
-- uri             # login url
-- username        # optional; a pre-seeded username
-- password        # optional; a pre-seeded password
-- username_prompt # optional; custom username prompt
-- secret_prompt   # optional; custom secret prompt
-- login_callback  # coderef of code that attempts login; should throw exception
-                  # on error
-- oauth_callback  # coderef of code that returns an oauth token; should throw exception
-                  # on error
-- catch_callback  # optional; process thrown exception message (e.g. munge
-                  # in some way and then print to STDERR)
+params: - uri             # login url - username        # optional; a
+pre-seeded username - password        # optional; a pre-seeded password -
+username_prompt # optional; custom username prompt - secret_prompt   #
+optional; custom secret prompt - login_callback  # coderef of code that
+attempts login; should throw exception                   # on error -
+oauth_callback  # coderef of code that returns an oauth token; should throw
+exception                   # on error - catch_callback  # optional; process
+thrown exception message (e.g. munge                   # in some way and then
+print to STDERR)
 
 returns: ($username, $password)
 
@@ -421,13 +447,14 @@ sub login_loop {
     my %args = @_;
 
     my $login_successful = 0;
-    my ($username, $password);
+    my ( $username, $password );
 
     my %login_args = ( uri => $args{uri}, username => $username );
     $login_args{username_prompt} = $args{username_prompt}
-        if $args{username_prompt};
+      if $args{username_prompt};
     $login_args{secret_prompt} = $args{secret_prompt}
-        if $args{secret_prompt};
+      if $args{secret_prompt};
+
     # allow prompting for just password if username already specified
     # and vice-versa for password
     # if both are specified, we still want to loop in case the
@@ -435,49 +462,52 @@ sub login_loop {
     $login_args{username} = $args{username} if $args{username};
     $login_args{password} = $args{password} if $args{password};
 
-    while (!$login_successful) {
+    while ( !$login_successful ) {
         ( $username, $password ) = $self->prompt_for_login(%login_args);
 
         try {
-            $args{login_callback}->($self, $username, $password);
+            $args{login_callback}->( $self, $username, $password );
             $login_successful = 1;
-        } catch {
-            if ($args{catch_callback}) {
+        }
+        catch {
+            if ( $args{catch_callback} ) {
                 $args{catch_callback}->($_);
-            }
-            else {
+            } else {
                 warn "\n$_\n\n";
             }
+
             # in the case of a failed login, reset username/password
             # to nothing so we re-prompt for both in the case of
             # having used saved values
-            ($login_args{username}, $login_args{password}) = (undef, undef);
+            ( $login_args{username}, $login_args{password} ) =
+              ( undef, undef );
         };
 
-        if ($args{oauth_callback}) {
-             try {
+        if ( $args{oauth_callback} ) {
+            try {
                 $password = $args{oauth_callback}->($self);
-             } catch {
-                if ($args{catch_callback}) {
+            }
+            catch {
+                if ( $args{catch_callback} ) {
                     $args{catch_callback}->($_);
-                }
-                else {
+                } else {
                     warn "\n$_\n\n";
                 }
             };
         }
         $self->foreign_username($username) if ($username);
     }
+
     # only save username/password/token if login was successful
     $self->save_username_and_token( $username, $password );
 
-    return ($username, $password);
+    return ( $username, $password );
 }
 
 =head2 extract_auth_from_uri( $uri_string )
 
-Given a server URI string, possibly containing auth info, extract the
-auth info if it exists.
+Given a server URI string, possibly containing auth info, extract the auth info
+if it exists.
 
 Also sets the remote_url and url attribute to the server URI with the auth
 information removed.
@@ -487,10 +517,10 @@ returns: ($username, $password)
 =cut
 
 sub extract_auth_from_uri {
-    my ($self, $uri_string) = @_;
+    my ( $self, $uri_string ) = @_;
 
     my $uri = URI->new($uri_string);
-    my ($username, $password);
+    my ( $username, $password );
 
     if ( $uri->can('userinfo') && ( my $auth = $uri->userinfo ) ) {
         ( $username, $password ) = split /:/, $auth, 2;
@@ -499,7 +529,7 @@ sub extract_auth_from_uri {
     $self->remote_url("$uri");
     $self->url("$uri");
 
-    return ($username, $password);
+    return ( $username, $password );
 }
 
 sub foreign_username {

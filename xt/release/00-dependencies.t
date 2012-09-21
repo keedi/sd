@@ -14,10 +14,9 @@ use Test::More;
 use File::Find;
 eval 'use Module::CoreList';
 if ($@) {
-    plan skip_all => 'Module::CoreList not installed'
-}
-elsif ( ! -e 'inc/.author' ) {
-    plan skip_all => 'no inc/.author, and it is on purpose ;)'
+    plan skip_all => 'Module::CoreList not installed';
+} elsif ( !-e 'inc/.author' ) {
+    plan skip_all => 'no inc/.author, and it is on purpose ;)';
 }
 
 plan 'no_plan';
@@ -54,7 +53,10 @@ my %required;
     ok( open( MAKEFILE, "Makefile.PL" ), "Opened Makefile" );
     my $data = <MAKEFILE>;
     close(FILE);
-    while ( $data =~ /^\s*?(?:requires|recommends)?.*?([\w:]+)'(?:\s*=>\s*['"]?([\d\.]+)['"]?)?.*?(?:#(.*))?$/gm ) {
+    while ( $data =~
+        /^\s*?(?:requires|recommends)?.*?([\w:]+)'(?:\s*=>\s*['"]?([\d\.]+)['"]?)?.*?(?:#(.*))?$/gm
+      )
+    {
         $required{$1} = $2;
         if ( defined $3 and length $3 ) {
             $required{$_} = undef for split ' ', $3;
@@ -69,7 +71,7 @@ for ( sort keys %used ) {
 
     #warn $_;
     ok( exists $required{$_}, "$_ in Makefile.PL" )
-        or diag( "used in ", join ", ", sort keys %{ $used{$_} } );
+      or diag( "used in ", join ", ", sort keys %{ $used{$_} } );
     delete $used{$_};
     delete $required{$_};
 }
@@ -77,7 +79,7 @@ for ( sort keys %used ) {
 for ( sort keys %required ) {
     my $first_in = Module::CoreList->first_release( $_, $required{$_} );
     fail("Required module $_ (v. $required{$_}) is in core since $first_in")
-        if defined $first_in and $first_in <= 5.008003;
+      if defined $first_in and $first_in <= 5.008003;
 }
 
 1;

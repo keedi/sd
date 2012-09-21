@@ -14,16 +14,16 @@ has sync_source => (
 );
 
 has gh_users => (
-    is  => 'rw',
-    isa => 'HashRef',
-    lazy => 1,
-    default => sub {{}},
+    is      => 'rw',
+    isa     => 'HashRef',
+    lazy    => 1,
+    default => sub { {} },
 );
 
 my %PROP_MAP = %App::SD::Replica::github::PROP_MAP;
 
 sub ticket_id {
-    my $self   = shift;
+    my $self = shift;
     return shift->{number};
 }
 
@@ -36,23 +36,25 @@ sub translate_ticket_state {
     my $ticket = shift;
 
     $ticket->{created_at} =
-        App::SD::Util::string_to_datetime($ticket->{created_at});
+      App::SD::Util::string_to_datetime( $ticket->{created_at} );
     $ticket->{updated_at} =
-        App::SD::Util::string_to_datetime($ticket->{updated_at});
+      App::SD::Util::string_to_datetime( $ticket->{updated_at} );
 
-    $ticket->{creator}   = $self->resolve_user_id_to( email_address => $ticket->{user}->{login} );
-    $ticket->{reporter}  = $ticket->{creator}; # no difference in github...?
-    
-    if ($ticket->{assignee}) {
-        $ticket->{owner}      = $self->resolve_user_id_to( email_address => $ticket->{assignee}->{login} );
+    $ticket->{creator} =
+      $self->resolve_user_id_to( email_address => $ticket->{user}->{login} );
+    $ticket->{reporter} = $ticket->{creator};    # no difference in github...?
+
+    if ( $ticket->{assignee} ) {
+        $ticket->{owner} = $self->resolve_user_id_to(
+            email_address => $ticket->{assignee}->{login} );
     }
-    
+
     $ticket->{milestone}   = $ticket->{milestone}->{title};
-    $ticket->{description} =  $ticket->{body};
-    
+    $ticket->{description} = $ticket->{body};
+
     # TODO check labels names to see if they match sd components
     $ticket->{tags} = join ', ', map { $_->{name} } @{ $ticket->{labels} };
-    
+
     return $ticket;
 }
 
@@ -66,19 +68,22 @@ sub find_matching_tickets {
     my $self                   = shift;
     my %query                  = (@_);
     my $last_changeset_seen_dt = $self->_only_pull_tickets_modified_after()
-      || DateTime->from_epoch( epoch => 0, time_zone  => 'GMT', );
-    
+      || DateTime->from_epoch( epoch => 0, time_zone => 'GMT', );
+
     my $issue = $self->sync_source->github->issue;
 
     # appending a Z to the iso8601 time as the date will be (correctly) treated as localtime
-    my @updated =  $issue->repos_issues({ since => $last_changeset_seen_dt . 'Z' });
+    my @updated =
+      $issue->repos_issues( { since => $last_changeset_seen_dt . 'Z' } );
 
-    while ($issue->has_next_page) {
+    while ( $issue->has_next_page ) {
         push @updated, $issue->next_page;
     }
 
-    push @updated, $issue->repos_issues({ since => $last_changeset_seen_dt . 'Z', state => 'closed' });    
-    while ($issue->has_next_page) {
+    push @updated,
+      $issue->repos_issues(
+        { since => $last_changeset_seen_dt . 'Z', state => 'closed' } );
+    while ( $issue->has_next_page ) {
         push @updated, $issue->next_page;
     }
 
@@ -91,7 +96,10 @@ sub _only_pull_tickets_modified_after {
     my $last_pull = $self->sync_source->upstream_last_modified_date();
     return unless $last_pull;
     my $before = App::SD::Util::string_to_datetime($last_pull);
-    $self->log_debug( "Failed to parse '" . $self->sync_source->upstream_last_modified_date() . "' as a timestamp. That means we have to sync ALL history") unless ($before);
+    $self->log_debug( "Failed to parse '"
+          . $self->sync_source->upstream_last_modified_date()
+          . "' as a timestamp. That means we have to sync ALL history" )
+      unless ($before);
     return $before;
 }
 
@@ -105,10 +113,11 @@ For GitHub, we can't get change history for tickets; we can only get comments.
 =cut
 
 sub find_matching_transactions {
-    my $self     = shift;
-    my %args     = validate( @_, { ticket => 1, starting_transaction => 1 } );
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, starting_transaction => 1 } );
     my @raw_txns =
-      @{ $self->sync_source->github->issue->comments( $args{ticket}->{number} ) };
+      @{ $self->sync_source->github->issue->comments( $args{ticket}->{number} )
+      };
 
     for my $comment (@raw_txns) {
         $comment->{updated_at} =
@@ -125,7 +134,8 @@ sub find_matching_transactions {
         next if $txn_date < ( $args{'starting_transaction'} || 0 );
 
         # Skip things we've pushed
-        next if (
+        next
+          if (
             $self->sync_source->foreign_transaction_originated_locally(
                 $txn_date, $args{'ticket'}->{number}
             )
@@ -159,14 +169,14 @@ sub find_matching_transactions {
 }
 
 sub transcode_create_txn {
-    my $self        = shift;
-    my $txn         = shift;
+    my $self = shift;
+    my $txn  = shift;
 
-    my $ticket      = $txn->{object};
+    my $ticket = $txn->{object};
 
-    my $ticket_uuid = 
-          $self->sync_source->uuid_for_remote_id($ticket->{number});
-    
+    my $ticket_uuid =
+      $self->sync_source->uuid_for_remote_id( $ticket->{number} );
+
     my $changeset = Prophet::ChangeSet->new(
         {
             original_source_uuid => $ticket_uuid,
@@ -184,13 +194,15 @@ sub transcode_create_txn {
         }
     );
 
-    for my $prop (qw/title state owner creator milestone tags description reporter/) {
+    for my $prop (
+        qw/title state owner creator milestone tags description reporter/)
+    {
         $change->add_prop_change(
             name => $PROP_MAP{$prop} || $prop,
             new => $ticket->{$prop},
         );
     }
-    
+
     # stringify datetime before saving
     $change->add_prop_change(
         name => $PROP_MAP{created_at},
@@ -199,7 +211,7 @@ sub transcode_create_txn {
 
     $change->add_prop_change(
         name => $self->sync_source->uuid . '-id',
-        new => $ticket->{number},
+        new  => $ticket->{number},
     );
 
     $changeset->add_change( { change => $change } );
@@ -215,9 +227,9 @@ sub transcode_create_txn {
 # 2 changesets if we needed to to some magic fixups.
 
 sub transcode_one_txn {
-    my $self               = shift;
-    my $txn_wrapper        = shift;
-    my $ticket = shift;
+    my $self        = shift;
+    my $txn_wrapper = shift;
+    my $ticket      = shift;
 
     my $txn = $txn_wrapper->{object};
     if ( $txn_wrapper->{serial} == 0 ) {
@@ -231,8 +243,9 @@ sub transcode_one_txn {
         {
             original_source_uuid => $ticket_uuid,
             original_sequence_no => $txn->{id},
-            creator =>
-              $self->resolve_user_id_to( email_address => $txn->{user}->{login} ),
+            creator              => $self->resolve_user_id_to(
+                email_address => $txn->{user}->{login}
+            ),
             created => $txn->{created_at}->iso8601,
         }
     );
@@ -244,10 +257,11 @@ sub transcode_one_txn {
 }
 
 sub _include_change_comment {
-    my $self        = shift;
-    my ($changeset, $ticket_uuid, $txn) = @_;
+    my $self = shift;
+    my ( $changeset, $ticket_uuid, $txn ) = @_;
 
-    if (exists $txn->{comments}) {
+    if ( exists $txn->{comments} ) {
+
         # comments don't have comments
         return;
     }
@@ -259,19 +273,23 @@ sub _include_change_comment {
         if ( $content !~ /^\s*$/s ) {
             $comment->add_prop_change(
                 name => 'created',
-                new  => $txn->{created_at}->ymd . ' ' . $txn->{created_at}->hms,
+                new => $txn->{created_at}->ymd . ' ' . $txn->{created_at}->hms,
             );
             $comment->add_prop_change(
                 name => 'creator',
-                new =>
-                  $self->resolve_user_id_to( email_address => $txn->{user}->{login} ),
+                new  => $self->resolve_user_id_to(
+                    email_address => $txn->{user}->{login}
+                ),
             );
             $comment->add_prop_change( name => 'content', new => $content );
             $comment->add_prop_change(
                 name => 'content_type',
                 new  => 'text/plain',
             );
-            $comment->add_prop_change( name => 'ticket', new => $ticket_uuid, );
+            $comment->add_prop_change(
+                name => 'ticket',
+                new  => $ticket_uuid,
+            );
 
             $changeset->add_change( { change => $comment } );
         }
@@ -286,18 +304,19 @@ sub translate_prop_status {
 }
 
 sub resolve_user_id_to {
-    my ($self, $to, $id) = @_;
-    
-    if (exists $self->gh_users->{$id}) {
+    my ( $self, $to, $id ) = @_;
+
+    if ( exists $self->gh_users->{$id} ) {
         return $self->gh_users->{$id};
     }
 
     my $email;
     my $user = $self->sync_source->github->user->show($id);
 
-    if (defined $user->{email}) {
+    if ( defined $user->{email} ) {
         $email = $user->{email};
     } else {
+
         # XXX this isn't great. A way to map github users <-> SD users would be better
         $email = $id . '@github';
     }

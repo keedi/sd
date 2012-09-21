@@ -14,7 +14,7 @@ has sync_source => (
 my %PROP_MAP = %App::SD::Replica::gcode::PROP_MAP;
 
 sub ticket_id {
-    my $self   = shift;
+    my $self = shift;
     return shift->id;
 }
 
@@ -22,15 +22,14 @@ sub _translate_final_ticket_state {
     my $self   = shift;
     my $ticket = shift;
 
-    my @labels = @{$ticket->labels};
+    my @labels = @{ $ticket->labels };
     my %prop;
     my @tags;
 
     for my $label (@labels) {
         if ( $label =~ /(.*?)-(.*)/ ) {
-            $prop{lc $1} = $2;
-        }
-        else {
+            $prop{ lc $1 } = $2;
+        } else {
             push @tags, $label;
         }
     }
@@ -43,7 +42,7 @@ sub _translate_final_ticket_state {
         status      => $self->translate_prop_status( $ticket->status ),
         summary     => $ticket->summary,
         description => $ticket->description,
-        tags        => (join ', ', @tags),
+        tags        => ( join ', ', @tags ),
         cc          => $ticket->cc,
     };
 
@@ -53,7 +52,11 @@ sub _translate_final_ticket_state {
 
     # delete undefined and empty fields
     delete $ticket_data->{$_}
-      for grep { !defined $ticket_data->{$_} || $ticket_data->{$_} eq '' || $ticket_data->{$_} eq '----' }
+      for grep {
+             !defined $ticket_data->{$_}
+          || $ticket_data->{$_} eq ''
+          || $ticket_data->{$_} eq '----'
+      }
       keys %$ticket_data;
 
     return $ticket_data;
@@ -66,7 +69,7 @@ Returns a array of all tickets found matching your QUERY hash.
 =cut
 
 sub find_matching_tickets {
-    my $self                   = shift;
+    my $self  = shift;
     my %args  = (@_);
     my $query = $args{query};
     my %query;
@@ -74,20 +77,21 @@ sub find_matching_tickets {
         if ( $query =~ /=/ ) {
             %query = map { /(.+)=(.*)/; $1 => $2 }
               split /&/, $query;
-        }
-        else {
+        } else {
             $query{q} = $query;
         }
     }
 
     my $last_changeset_seen_dt = $self->_only_pull_tickets_modified_after()
       || DateTime->from_epoch( epoch => 0 );
-    $self->sync_source->log("Searching for tickets. This can take a very long time on initial sync or if you haven't synced in a long time.");
+    $self->sync_source->log(
+        "Searching for tickets. This can take a very long time on initial sync or if you haven't synced in a long time."
+    );
     require Net::Google::Code;
 
     if ( $Net::Google::Code::VERSION lt '0.15' ) {
         die
-"query support is only for Net::Google::Code version not less than 0.15"
+          "query support is only for Net::Google::Code version not less than 0.15"
           if $args{query};
         require Net::Google::Code::Issue::Search;
         my $search =
@@ -96,16 +100,15 @@ sub find_matching_tickets {
 
         if ( $search->updated_after($last_changeset_seen_dt) ) {
             return $search->results;
-        }
-        else {
+        } else {
             return [];
         }
-    }
-    else {
+    } else {
         my $issue = Net::Google::Code::Issue->new(
             map { $_ => $self->sync_source->gcode->$_ }
               grep { $self->sync_source->gcode->$_ }
-              qw/project email password/ );
+              qw/project email password/
+        );
 
         if ( keys %query == 0 ) {
 
@@ -124,7 +127,7 @@ sub find_matching_tickets {
             }
         }
 
-        $query{can} ||= 'all';
+        $query{can}         ||= 'all';
         $query{max_results} ||= 1_000_000_000;
         delete $query{q} unless defined $query{q};
         my $results = $issue->list( %query,
@@ -144,7 +147,10 @@ sub _only_pull_tickets_modified_after {
     my $last_pull = $self->sync_source->upstream_last_modified_date();
     return unless $last_pull;
     my $before = App::SD::Util::string_to_datetime($last_pull);
-    $self->log_debug( "Failed to parse '" . $self->sync_source->upstream_last_modified_date() . "' as a timestamp. That means we have to sync ALL history") unless ($before);
+    $self->log_debug( "Failed to parse '"
+          . $self->sync_source->upstream_last_modified_date()
+          . "' as a timestamp. That means we have to sync ALL history" )
+      unless ($before);
     return $before;
 }
 
@@ -170,13 +176,14 @@ sub translate_ticket_state {
         for my $prop (qw(owner status summary)) {
             next unless exists $updates->{$prop};
             my $value = delete $updates->{$prop};
-            $value = '' if ($value eq '----');
+            $value = '' if ( $value eq '----' );
             if ( my $sub = $self->can( 'translate_prop_' . $prop ) ) {
                 $value = $sub->( $self, $value );
             }
 
             $earlier_state{ $PROP_MAP{$prop} } =
-              $self->warp_list_to_old_value( $earlier_state{ $PROP_MAP{$prop} },
+              $self->warp_list_to_old_value(
+                $earlier_state{ $PROP_MAP{$prop} },
                 $value, undef );
             $txn->{post_state}{ $PROP_MAP{$prop} } = $value;
         }
@@ -225,8 +232,7 @@ sub translate_ticket_state {
                 if ( $value =~ /(.*?)-(.*)/ ) {
                     $name  = lc $1;
                     $value = $2;
-                }
-                else {
+                } else {
                     $name = 'labels';
                 }
 
@@ -238,23 +244,23 @@ sub translate_ticket_state {
             }
         }
 
-        $txn->{pre_state} = {%earlier_state};
+        $txn->{pre_state}     = {%earlier_state};
         $pre_txn->{pre_state} = $txn->{post_state} if $pre_txn;
-        $pre_txn = $txn;
+        $pre_txn              = $txn;
     }
 
-# XXX try our best to find historical info
-# e.g. 
-# comemnt 3 has summary: "foo"
-# comment 4 and 5 don't have summary changes
-# comment 6 has summary: "bar"
-# then we can set comment 4 and 5's summary to 'foo'
+    # XXX try our best to find historical info
+    # e.g.
+    # comemnt 3 has summary: "foo"
+    # comment 4 and 5 don't have summary changes
+    # comment 6 has summary: "bar"
+    # then we can set comment 4 and 5's summary to 'foo'
     my @sorted = sort { $b->{'serial'} <=> $a->{'serial'} } @$transactions;
     for ( my $i = 0 ; $i < @sorted ; $i++ ) {
         for my $prop (qw(owner status summary)) {
             if ( !$sorted[$i]->{post_state}{ $PROP_MAP{$prop} } ) {
                 ( $sorted[$i]->{post_state}{ $PROP_MAP{$prop} } ) =
-                  grep { $_ }
+                  grep {$_}
                   map  { $_->{post_state}{ $PROP_MAP{$prop} } }
                   @sorted[ $i + 1 .. $#sorted ];
                 $sorted[$i]->{post_state}{ $PROP_MAP{$prop} } ||= '';
@@ -267,7 +273,8 @@ sub translate_ticket_state {
 
 =head2 find_matching_transactions { ticket => $id, starting_transaction => $num  }
 
-Returns a reference to an array of all transactions (as hashes) on ticket $id after transaction $num.
+Returns a reference to an array of all transactions (as hashes) on ticket $id
+after transaction $num.
 
 =cut
 
@@ -284,7 +291,8 @@ sub find_matching_transactions {
         next if $txn_date < ( $args{'starting_transaction'} || 0 );
 
         # Skip things we've pushed
-        next if (
+        next
+          if (
             $self->sync_source->foreign_transaction_originated_locally(
                 $txn_date, $args{'ticket'}->id
             )
@@ -309,8 +317,7 @@ sub transcode_create_txn {
     my $create_data = shift;
     my $final_data  = shift;
     my $ticket_id   = $final_data->{ $self->sync_source->uuid . '-id' };
-    my $ticket_uuid = 
-          $self->sync_source->uuid_for_remote_id($ticket_id);
+    my $ticket_uuid = $self->sync_source->uuid_for_remote_id($ticket_id);
     my $creator =
       $self->resolve_user_id_to( email_address => $create_data->{reporter} );
     my $created = $final_data->{created};
@@ -370,10 +377,9 @@ sub transcode_one_txn {
             $newer_ticket_state );
     }
 
-    my $ticket_id   = $newer_ticket_state->{ $self->sync_source->uuid . '-id' };
-    my $ticket_uuid =
-      $self->sync_source->uuid_for_remote_id( $ticket_id );
-    my $changeset = Prophet::ChangeSet->new(
+    my $ticket_id = $newer_ticket_state->{ $self->sync_source->uuid . '-id' };
+    my $ticket_uuid = $self->sync_source->uuid_for_remote_id($ticket_id);
+    my $changeset   = Prophet::ChangeSet->new(
         {
             original_source_uuid => $ticket_uuid,
             original_sequence_no => $txn->sequence,
@@ -401,7 +407,7 @@ sub transcode_one_txn {
         ) unless $new eq $old;
     }
 
-#    warn "right here, we need to deal with changed data that gcode failed to record";
+    #    warn "right here, we need to deal with changed data that gcode failed to record";
     my %updates = %{ $txn->updates };
 
     my $props = $txn->updates;
@@ -409,8 +415,8 @@ sub transcode_one_txn {
         $prop = lc $prop;
         $change->add_prop_change(
             name => $PROP_MAP{$prop} || $prop,
-            old  => $txn_wrapper->{pre_state}->{$PROP_MAP{$prop}},
-            new  => $txn_wrapper->{post_state}->{$PROP_MAP{$prop}}
+            old  => $txn_wrapper->{pre_state}->{ $PROP_MAP{$prop} },
+            new  => $txn_wrapper->{post_state}->{ $PROP_MAP{$prop} }
         );
     }
 
@@ -430,7 +436,7 @@ sub _include_change_comment {
     my $txn         = shift;
 
     my $comment = $self->new_comment_creation_change();
-   
+
     if ( my $content = $txn->content ) {
         if ( $content !~ /^\s*$/s ) {
             $comment->add_prop_change(
@@ -447,7 +453,10 @@ sub _include_change_comment {
                 name => 'content_type',
                 new  => 'text/plain',
             );
-            $comment->add_prop_change( name => 'ticket', new => $ticket_uuid, );
+            $comment->add_prop_change(
+                name => 'ticket',
+                new  => $ticket_uuid,
+            );
 
             $changeset->add_change( { change => $comment } );
         }

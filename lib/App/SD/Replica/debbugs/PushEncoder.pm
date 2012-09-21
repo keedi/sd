@@ -3,9 +3,10 @@ use Any::Moose;
 
 use Params::Validate;
 
-has sync_source => 
-    ( isa => 'App::SD::Replica::debbugs',
-      is => 'rw');
+has sync_source => (
+    isa => 'App::SD::Replica::debbugs',
+    is  => 'rw'
+);
 
 =head2 integrate_change L<Prophet::Change>, L<Prophet::ChangeSet>
 
@@ -23,8 +24,7 @@ sub integrate_change {
     my $id;
     eval {
         if (    $change->record_type eq 'ticket'
-            and $change->change_type eq 'add_file'
-    )
+            and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_ticket_create( $change, $changeset );
             $self->sync_source->record_remote_id_for_pushed_record(
@@ -32,14 +32,16 @@ sub integrate_change {
                 remote_id => $id
             );
 
-        } elsif ( $change->record_type eq 'attachment'
+        } elsif (
+            $change->record_type eq 'attachment'
             and $change->change_type eq 'add_file'
 
-        ) {
+          )
+        {
             $id = $self->integrate_attachment( $change, $changeset );
         } elsif ( $change->record_type eq 'comment'
-            and $change->change_type eq 'add_file'
-        ) {
+            and $change->change_type eq 'add_file' )
+        {
             $id = $self->integrate_comment( $change, $changeset );
         } elsif ( $change->record_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );

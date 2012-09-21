@@ -1,7 +1,6 @@
 App-SD-*
 .build
-blib/
-pm_to_blib
+.tidyall.d
 *~
 .prove
 *.bak

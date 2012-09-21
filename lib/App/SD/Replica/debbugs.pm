@@ -31,7 +31,7 @@ sub BUILD {
     # ...
 }
 
-sub record_pushed_transactions {}
+sub record_pushed_transactions { }
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
