@@ -92,17 +92,5 @@ sub string_to_datetime {
     return undef;
 }
 
-=head2 datetime_to_string($datetime)
-
-Format datetime in a nice human-readable manner.
-
-=cut
-
-sub datetime_to_string {
-    my $datetime = shift;
-
-    return $datetime->date . q{ } . $datetime->time;
-}
-
 no Any::Moose;
 1;

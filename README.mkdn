@@ -4,13 +4,13 @@ App::SD - Distributed ticket tracking system
 
 # VERSION
 
-version 0.001
+version 0.76
 
 # DESCRIPTION
 
-SD is a peer to peer ticket tracking system built on the Prophet
-distributed database. SD is designed to make it easy to work with tickets
-and to share ticket databases with your collaborators.
+SD is a peer to peer ticket tracking system built on the Prophet distributed
+database. SD is designed to make it easy to work with tickets and to share
+ticket databases with your collaborators.
 
 Please run `sd help` for documentation and `sd help intro` for an
 introduction to SD.

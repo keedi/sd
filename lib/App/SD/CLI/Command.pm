@@ -2,7 +2,7 @@ package App::SD::CLI::Command;
 use Any::Moose 'Role';
 use Params::Validate qw(validate);
 
-=head2 get_content %args
+=method get_content %args
 
 This is a helper routine for use in SD commands to enable getting records in
 different ways such as from a file, on the commandline, or from an editor.

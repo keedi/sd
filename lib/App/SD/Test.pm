@@ -31,7 +31,7 @@ BEGIN {
     $ENV{'USER'} ||= 'nobody';
 }
 
-=head2 create_ticket_ok ARGS
+=func create_ticket_ok ARGS
 
 Creates a new ticket, passing ARGS along to the creation command (after the
 props separator).
@@ -53,7 +53,7 @@ sub create_ticket_ok {
     return ( $luid, $uuid );
 }
 
-=head2 update_ticket_ok ID ARGS
+=func update_ticket_ok ID ARGS
 
 Updates the ticket #ID, passing ARGS along to the update command.
 
@@ -71,7 +71,7 @@ sub update_ticket_ok {
     );
 }
 
-=head2 create_ticket_comment_ok ARGS
+=func create_ticket_comment_ok ARGS
 
 Creates a new ticket comment, passing ARGS along to the creation command.
 
@@ -92,7 +92,7 @@ sub create_ticket_comment_ok {
     return ( $luid, $uuid );
 }
 
-=head2 create_ticket_ok luid
+=func create_ticket_ok luid
 
 Takes a LUID and returns the corresponding UUID.
 
@@ -110,7 +110,7 @@ sub get_uuid_for_luid {
     return undef;
 }
 
-=head2 get_luid_for_uuid UUID
+=func get_luid_for_uuid UUID
 
 Takes a UUID and returns the corresponding LUID.
 
@@ -128,7 +128,7 @@ sub get_luid_for_uuid {
     return undef;
 }
 
-=head2 create_ticket_with_editor_ok [ '--verbose' ... ]
+=func create_ticket_with_editor_ok [ '--verbose' ... ]
 
 Creates a ticket and comment at the same time using a spawned editor.  It's
 expected that C<$ENV{VISUAL}> has been frobbed into something non-interactive,
@@ -157,7 +157,7 @@ sub create_ticket_with_editor_ok {
     return ( $ticket_luid, $ticket_uuid, $comment_luid, $comment_uuid );
 }
 
-=head2 update_ticket_with_editor_ok TICKET_LUID, TICKET_UUID [ '--verbose' ]
+=func update_ticket_with_editor_ok TICKET_LUID, TICKET_UUID [ '--verbose' ]
 
 Updates the ticket given by TICKET_UUID using a spawned editor. It's expected
 that C<$ENV{VISUAL}> has been frobbed into something non-interactive, or this
@@ -189,7 +189,7 @@ sub update_ticket_with_editor_ok {
     return ( $comment_luid, $comment_uuid );
 }
 
-=head2 update_ticket_comment_with_editor_ok COMMENT_LUID, COMMENT_UUID
+=func update_ticket_comment_with_editor_ok COMMENT_LUID, COMMENT_UUID
 
 Updates the ticket comment given by COMMENT_UUID using a spawned editor. It's
 expected that C<$ENV{VISUAL}> has been frobbed into something non-interactive,
@@ -209,7 +209,7 @@ sub update_ticket_comment_with_editor_ok {
     );
 }
 
-=head2 get_ticket_info LUID/UUID
+=func get_ticket_info LUID/UUID
 
 Returns a hash reference with information about ticket.
 

@@ -38,7 +38,7 @@ sub default_prop_milestone {
       ->[0];
 }
 
-=head2 default_prop_status
+=method default_prop_status
 
 Returns a string of the default value of the C<status> prop.
 
@@ -54,7 +54,7 @@ sub has_active_status {
     return 1 if grep { $_ eq $self->prop('status') } @{$ACTIVE_STATUSES};
 }
 
-=head2 default_prop_reporter
+=method default_prop_reporter
 
 Returns a string of the default value of the C<reporter> prop. (Currently, this
 is the config variable C<email_address> or the environmental variable
@@ -74,7 +74,7 @@ sub default_prop_reporter {
     }
 }
 
-=head2 canonicalize_prop_status
+=method canonicalize_prop_status
 
 resolved is called closed.
 
@@ -117,7 +117,7 @@ sub canonicalize_prop_due {
     return 1;
 }
 
-=head2 _default_summary_format
+=method _default_summary_format
 
 The default ticket summary format (used for displaying tickets in a list,
 generally).
@@ -126,7 +126,7 @@ generally).
 
 sub _default_summary_format {'%s,$luid | %s,summary | %s,status'}
 
-=head2 validate_prop_status { props = $hashref, errors = $hashref }
+=method validate_prop_status { props = $hashref, errors = $hashref }
 
 Determines whether the status prop value given in C<$args{props}{status}> is
 valid.
@@ -163,7 +163,7 @@ sub _recommended_values_for_prop_component {
     return @{ shift->app_handle->setting( label => 'components' )->get() };
 }
 
-=head2 props_to_show { 'verbose' => 1, update => 0 }
+=method props_to_show { 'verbose' => 1, update => 0 }
 
 A list of which properties to display for the C<show> command (in order from
 first to last).
@@ -204,7 +204,7 @@ sub props_to_show {
     );
 }
 
-=head2 _create_prop_ordering hash_to_order => $hashref, order => $arrayref [, update => 1 ]
+=method _create_prop_ordering hash_to_order => $hashref, order => $arrayref [, update => 1 ]
 
 Given references to a hash and an array, return an array of the keys of the
 hash in the order specified by the array, with any extra keys at the end of the
@@ -236,7 +236,7 @@ sub _create_prop_ordering {
     return @new_props_list;
 }
 
-=head2 immutable_props
+=method immutable_props
 
 A pattern of props not to show in an editor (when creating or updating a
 ticket, for example). Could also be used to determine which props shouldn't be
@@ -246,7 +246,7 @@ user-modifiable.
 
 sub immutable_props {qw(id creator created original_replica)}
 
-=head2 is_overdue [$date]
+=method is_overdue [$date]
 
 Takes an ISO date (or uses the C<date> prop value if no date is given).
 

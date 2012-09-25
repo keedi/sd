@@ -3,7 +3,7 @@ use Any::Moose 'Role';
 use Params::Validate qw(:all);
 use constant record_class => 'App::SD::Model::Ticket';
 
-=head2 add_comment content => str, uuid => str
+=method add_comment content => str, uuid => str
 
 A convenience method that takes a content string and a ticket uuid and creates
 a new comment record, for use in other commands (such as ticket create and
@@ -28,7 +28,7 @@ sub add_comment {
     $command->run();
 }
 
-=head2 metadata_separator
+=method metadata_separator
 
 A string of text that goes in the comment denoting the beginning of immutable
 ticket metadata in a string representing a ticket.
@@ -44,7 +44,7 @@ use constant metadata_separator =>
 use constant mutable_props_separator => 'edit ticket details below';
 use constant comment_separator       => 'add new ticket comment below';
 
-=head2 create_record_template [ RECORD ]
+=method create_record_template [ RECORD ]
 
 Creates a string representing a new record, prefilling default props and props
 specified on the command line. Intended to be presented to the user for editing
@@ -222,7 +222,7 @@ sub _build_kv_pairs {
     return $string;
 }
 
-=head2 parse_record_template $str
+=method parse_record_template $str
 
 Takes a string containing a ticket record consisting of prop: value pairs
 followed by a separator, followed by an optional comment.

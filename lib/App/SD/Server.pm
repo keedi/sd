@@ -8,7 +8,7 @@ has with_browser => (
     default => 0,
 );
 
-=head2 database_bonjour_name
+=method database_bonjour_name
 
 Returns the name this database should use to announce itself via bonjour
 

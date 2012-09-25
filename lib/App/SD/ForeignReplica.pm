@@ -1,4 +1,7 @@
 package App::SD::ForeignReplica;
+
+# ABSTRACT: Base class for foreign replicas
+
 use Any::Moose;
 use Params::Validate qw/:all/;
 
@@ -17,7 +20,7 @@ has uuid => (
     }
 );
 
-=head2 save_username_and_token( $username, $token )
+=method save_username_and_token( $username, $token )
 
 Saves the given username and token to the replica-specific config file, so the
 user doesn't have to enter it every time.
@@ -76,7 +79,7 @@ sub integrate_changeset {
     $self->SUPER::integrate_changeset(%args);
 }
 
-=head2 integrate_change $change $changeset
+=method integrate_change( $change, $changeset )
 
 Given a change (and the changeset it's part of), this routine will load the
 push encoder for the foreign replica's type and call integrate_change on it.
@@ -104,22 +107,12 @@ sub integrate_change {
     $recoder->integrate_change( $change, $changeset );
 }
 
-=head2 record_pushed_transactions
+=method record_pushed_transactions( $ticket, $changeset, $start_time) 
 
 Walk the set of transactions on the ticket whose id you've passed in, looking
 for updates by the 'current user' which happened after start_time and before
 now. Then mark those transactions as ones that originated in SD, so we don't
 accidentally push them later.
-
-=over
-
-=item ticket
-
-=item changeset
-
-=item start_time
-
-=back
 
 =cut
 
@@ -180,7 +173,7 @@ sub record_pushed_transactions {
     }
 }
 
-=head2 record_pushed_transaction $foreign_transaction_id, $changeset
+=method record_pushed_transaction( $foreign_transaction_id, $changeset )
 
 Record that this replica was the original source of $foreign_transaction_id
 (with changeset $changeset)
@@ -209,7 +202,7 @@ sub record_pushed_transaction {
 
 }
 
-=head2 foreign_transaction_originated_locally $transaction_id $foreign_record_id
+=method foreign_transaction_originated_locally( $transaction_id, $foreign_record_id )
 
 Given a transaction id, will return true if this transaction originated in
 Prophet and was pushed to the foreign replica or originated in the foreign
@@ -304,7 +297,7 @@ sub remote_uri_path_for_id {
       . "map a remote id to /ticket/id or soemthing";
 }
 
-=head2 uuid_for_remote_id $id
+=method uuid_for_remote_id( $id )
 
 lookup the uuid for the remote record id. If we don't find it, construct it out
 of the remote url and the remote uri path for the record id;
@@ -389,7 +382,7 @@ sub _set_remote_id_for_uuid {
         props => { $self->uuid . '-id' => $args{'remote_id'} } );
 }
 
-=head2 record_remote_id_for_pushed_record
+=method record_remote_id_for_pushed_record
 
 When pushing a record created within the prophet cloud to a foreign replica, we
 need to do bookkeeping to record the prophet uuid to remote id mapping.
@@ -420,7 +413,7 @@ sub upstream_last_modified_date {
     return $self->fetch_local_metadata('last_modified_date');
 }
 
-=head2 login_loop
+=method login_loop
 
 Loop on prompting for username/password until login is successful; user can
 abort with ^C.
@@ -428,15 +421,26 @@ abort with ^C.
 Saves username and password to the replica's configuration file upon successful
 login.
 
-params: - uri             # login url - username        # optional; a
-pre-seeded username - password        # optional; a pre-seeded password -
-username_prompt # optional; custom username prompt - secret_prompt   #
-optional; custom secret prompt - login_callback  # coderef of code that
-attempts login; should throw exception                   # on error -
-oauth_callback  # coderef of code that returns an oauth token; should throw
-exception                   # on error - catch_callback  # optional; process
-thrown exception message (e.g. munge                   # in some way and then
-print to STDERR)
+=for :list
+* uri        
+login url
+* username
+optional; a pre-seeded username
+* password
+optional; a pre-seeded password
+* username_prompt
+optional; custom username prompt
+* secret_prompt  
+optional; custom secret prompt
+* login_callback
+coderef of code that attempts login;
+should throw exception on error
+* oauth_callback  
+coderef of code that returns an oauth token;
+should throw exception on error
+* catch_callback
+optional; process thrown exception message (e.g. munge 
+in some way and then print to STDERR)
 
 returns: ($username, $password)
 
@@ -504,7 +508,7 @@ sub login_loop {
     return ( $username, $password );
 }
 
-=head2 extract_auth_from_uri( $uri_string )
+=method extract_auth_from_uri( $uri_string )
 
 Given a server URI string, possibly containing auth info, extract the auth info
 if it exists.
