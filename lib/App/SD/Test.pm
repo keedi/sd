@@ -25,7 +25,7 @@ BEGIN {
     my $tmp_config = File::Temp->new( UNLINK => 0 );
     print $tmp_config '';
     close $tmp_config;
-    print "setting SD_CONFIG to " . $tmp_config->filename . "\n";
+    diag "setting SD_CONFIG to " . $tmp_config->filename . "\n";
     $ENV{'SD_CONFIG'}     = $tmp_config->filename;
     $ENV{'PROPHET_EMAIL'} = 'nobody@example.com';
     $ENV{'USER'} ||= 'nobody';
@@ -107,7 +107,7 @@ sub get_uuid_for_luid {
     if ( $out =~ /^id: \d+ \((.*)\)/m ) {
         return $1;
     }
-    return undef;
+    return;
 }
 
 =func get_luid_for_uuid UUID
@@ -125,7 +125,7 @@ sub get_luid_for_uuid {
     if ( $out =~ /^id: (\d+)/m ) {
         return $1;
     }
-    return undef;
+    return;
 }
 
 =func create_ticket_with_editor_ok [ '--verbose' ... ]

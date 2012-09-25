@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Command Aliases');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 
 You can create custom command aliases in the aliases section of
 your local configuration files. The format is as follows:

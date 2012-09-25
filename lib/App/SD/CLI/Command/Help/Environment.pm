@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Environment variables');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 
 The following environmental variables can be set to affect SD's
 configuration. Example syntax is for bash-like shells.

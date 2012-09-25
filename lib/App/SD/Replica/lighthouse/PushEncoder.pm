@@ -31,21 +31,17 @@ sub integrate_change {
                 uuid      => $change->record_uuid,
                 remote_id => $id,
             );
-        }
-        elsif ( $change->record_type eq 'attachment'
+        } elsif ( $change->record_type eq 'attachment'
             and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_attachment( $change, $changeset );
-        }
-        elsif ( $change->record_type eq 'comment'
+        } elsif ( $change->record_type eq 'comment'
             and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_comment( $change, $changeset );
-        }
-        elsif ( $change->record_type eq 'ticket' ) {
+        } elsif ( $change->record_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );
-        }
-        else {
+        } else {
             $self->sync_source->log(
                 'I have no idea what I am doing for ' . $change->record_uuid );
             return;
@@ -77,7 +73,7 @@ sub integrate_ticket_update {
     my $remote_ticket_id =
       $self->sync_source->remote_id_for_uuid( $change->record_uuid );
     my $ticket = $self->sync_source->lighthouse->ticket;
-    $ticket->load( $remote_ticket_id );
+    $ticket->load($remote_ticket_id);
     my $attr = $self->_recode_props_for_integrate($change);
     $ticket->update(
         map { $_ => $attr->{$_} }
@@ -97,10 +93,10 @@ sub integrate_comment {
 
     # Figure out the remote site's ticket ID for this change's record
 
-    my %props = map { $_->name => $_->new_value } $change->prop_changes;
+    my %props     = map { $_->name => $_->new_value } $change->prop_changes;
     my $ticket_id = $self->sync_source->remote_id_for_uuid( $props{'ticket'} );
-    my $ticket = $self->sync_source->lighthouse->ticket;
-    $ticket->load( $ticket_id );
+    my $ticket    = $self->sync_source->lighthouse->ticket;
+    $ticket->load($ticket_id);
 
     my %content = ( body => $props{'content'} || '' );
 
@@ -115,7 +111,7 @@ sub integrate_ticket_attachment {
         { isa => 'Prophet::Change' },
         { isa => 'Prophet::ChangeSet' }
     );
-    my %props     = map { $_->name => $_->new_value } $change->prop_changes;
+    my %props = map { $_->name => $_->new_value } $change->prop_changes;
     my $ticket_id = $self->sync_source->remote_id_for_uuid( $props{'ticket'} );
 
     $self->sync_source->log(
@@ -133,7 +129,7 @@ sub integrate_ticket_create {
 
     # Build up a ticket object out of all the record's attributes
     my $ticket = $self->sync_source->lighthouse->ticket;
-    my $attr = $self->_recode_props_for_integrate($change);
+    my $attr   = $self->_recode_props_for_integrate($change);
     $ticket->create(
         map { $_ => $attr->{$_} }
           grep { exists $attr->{$_} }
@@ -152,43 +148,34 @@ sub _recode_props_for_integrate {
     for my $key ( keys %props ) {
         if ( $key eq 'summary' ) {
             $attr{title} = $props{$key};
-        }
-        elsif ( $key eq 'status' ) {
+        } elsif ( $key eq 'status' ) {
             $attr{state} = $props{$key};
-        }
-        elsif ( $key eq 'tag' ) {
+        } elsif ( $key eq 'tag' ) {
             $attr{tag} = $props{$key};
-        }
-        elsif ( $key eq 'content' ) {
+        } elsif ( $key eq 'content' ) {
             $attr{body} = $props{$key};
-        }
-        elsif ( $key eq 'milestone' ) {
+        } elsif ( $key eq 'milestone' ) {
             my $milestone = $self->sync_source->lighthouse->milestone;
             if ( $props{$key} ) {
                 eval { $milestone->load( $props{$key} ) };
-                if ( $@ ) {
+                if ($@) {
                     $self->sync_source->log(
                         "Warn: no milestone $props{$key} exist");
-                }
-                else {
+                } else {
                     $attr{milestone_id} = $milestone->id;
                 }
+            } else {
+                $attr{milestone_id} = undef,;
             }
-            else {
-                $attr{milestone_id} = undef,
-            }
-        }
-        elsif ( $key eq 'owner' ) {
+        } elsif ( $key eq 'owner' ) {
             if ( $props{key} ) {
                 if ( $props{$key} =~ /\((\d+)\)/ ) {
                     $attr{assigned_user_id} = $1;
                 }
-            }
-            else {
+            } else {
                 $attr{assigned_user_id} = undef;
             }
-        }
-        else {
+        } else {
             $attr{$key} = $props{$key};
         }
     }

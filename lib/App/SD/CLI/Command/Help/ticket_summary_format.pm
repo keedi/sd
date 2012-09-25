@@ -6,7 +6,7 @@ sub run {
     my $self = shift;
     $self->print_header('The ticket.summary-format configuration option');
 
-print <<EOF
+    print <<EOF
 The ticket.summary-format configuration directive consists of any number
 of comma-separated groups, with each group separated from the next by a
 vertical bar (|). Any amount of whitespace may appear before or after the | and

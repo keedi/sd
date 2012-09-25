@@ -5,7 +5,7 @@ with 'App::SD::CLI::Command';
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->cli->get_script_name;
+    my $cmd  = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}help [<topic>]
@@ -19,31 +19,30 @@ sub title {
 
 sub version {
     my $self = shift;
-    "sd ".$App::SD::VERSION;
+    "sd " . $App::SD::VERSION;
 
 }
 
 sub print_header {
-    my $self = shift;
-    my $title = shift;
-    my $string =  join(' - ', $self->version, $title);
+    my $self   = shift;
+    my $title  = shift;
+    my $string = join( ' - ', $self->version, $title );
 
     $self->print_usage if $self->has_arg('h');
 
-    print "\n".$string . "\n";
-    print '-' x ( length($string));
+    print "\n" . $string . "\n";
+    print '-' x ( length($string) );
     print "\n";
 
 }
 
 sub run {
     my $self = shift;
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
     $self->print_header("Help Index");
 
-
-print <<EOF
+    print <<EOF
 
 ${cmd}help intro       -  Getting started with SD
 ${cmd}help search      -  Searching for and displaying tickets

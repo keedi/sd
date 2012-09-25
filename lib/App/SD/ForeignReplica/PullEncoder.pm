@@ -140,7 +140,7 @@ sub _only_pull_tickets_modified_after {
     # XXX TODO THIS WILL HURT US SOME DAY
     # At that time, Jesse will buy you a beer.
     my $last_pull = $self->sync_source->upstream_last_modified_date();
-    return undef unless $last_pull;
+    return unless $last_pull;
     my $before = App::SD::Util::string_to_datetime($last_pull);
     die "Failed to parse '"
       . $self->sync_source->upstream_last_modified_date()

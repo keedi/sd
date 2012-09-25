@@ -4,10 +4,10 @@ extends 'App::SD::CLI::Command::Help';
 
 sub run {
     my $self = shift;
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
     $self->print_header('About SD');
 
-print <<EOF
+    print <<EOF
 sd is a peer-to-peer replicated ticket tracking system built on the
 Prophet database and synchronization framework. sd is designed for
 inter-organization replication and sharing, as well as offline

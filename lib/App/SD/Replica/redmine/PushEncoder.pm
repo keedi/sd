@@ -4,8 +4,8 @@ use Any::Moose;
 use Params::Validate;
 
 has sync_source => (
-    isa => 'App::SD::Replica::redmine',
-    is  => 'rw',
+    isa      => 'App::SD::Replica::redmine',
+    is       => 'rw',
     required => 1
 );
 
@@ -33,16 +33,13 @@ sub integrate_change {
                 uuid      => $change->record_uuid,
                 remote_id => $id,
             );
-        }
-        elsif ( $change->record_type eq 'comment'
+        } elsif ( $change->record_type eq 'comment'
             and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_comment( $change, $changeset );
-        }
-        elsif ( $change->record_type eq 'ticket' ) {
+        } elsif ( $change->record_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );
-        }
-        else {
+        } else {
             $self->sync_source->log(
                 'I have no idea what I am doing for ' . $change->record_uuid );
             return;
@@ -69,8 +66,8 @@ sub integrate_ticket_update {
         { isa => 'Prophet::Change' },
         { isa => 'Prophet::ChangeSet' }
     );
-    my $remote_ticket_id
-        = $self->sync_source->remote_id_for_uuid( $change->record_uuid );
+    my $remote_ticket_id =
+      $self->sync_source->remote_id_for_uuid( $change->record_uuid );
     my $attr = $self->_recode_props_for_integrate($change);
 
     my $ticket = Net::Redmine::Ticket->load(
@@ -81,7 +78,7 @@ sub integrate_ticket_update {
         $ticket->$_( $attr->{$_} ) if $attr->{$_};
     }
     if ( $attr->{state} ) {
-        $ticket->status("Open")  if $attr->{state} eq 'open';
+        $ticket->status("Open")   if $attr->{state} eq 'open';
         $ticket->status("Closed") if $attr->{state} eq 'closed';
     }
     $ticket->save;
@@ -96,7 +93,8 @@ sub integrate_ticket_create {
         { isa => 'Prophet::ChangeSet' }
     );
     my $attr = $self->_recode_props_for_integrate($change);
-    my $ticket = $self->sync_source->redmine->create(ticket => $attr);
+    my $ticket = $self->sync_source->redmine->create( ticket => $attr );
+
     # TODO error
     return $ticket->{id};
 }
@@ -109,10 +107,9 @@ sub integrate_comment {
         { isa => 'Prophet::ChangeSet' }
     );
 
-    my %props = map { $_->name => $_->new_value } $change->prop_changes;
-    my $ticket_id
-        = $self->sync_source->remote_id_for_uuid( $props{'ticket'} );
-    my $ticket = Net::Redmine::Ticket->load(
+    my %props     = map { $_->name => $_->new_value } $change->prop_changes;
+    my $ticket_id = $self->sync_source->remote_id_for_uuid( $props{'ticket'} );
+    my $ticket    = Net::Redmine::Ticket->load(
         connection => $self->sync_source->redmine->connection,
         id         => $ticket_id
     );
@@ -131,11 +128,9 @@ sub _recode_props_for_integrate {
     for my $key ( keys %props ) {
         if ( $key eq 'summary' ) {
             $attr{subject} = $props{$key};
-        }
-        elsif ( $key eq 'body' ) {
+        } elsif ( $key eq 'body' ) {
             $attr{description} = $props{$key};
-        }
-        elsif ( $key eq 'status' ) {
+        } elsif ( $key eq 'status' ) {
             $attr{state} = $props{$key} =~ /new|open/ ? 'open' : 'closed';
         }
     }

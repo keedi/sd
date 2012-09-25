@@ -6,14 +6,16 @@ use Memoize;
 
 has sync_source => (
     isa => 'App::SD::Replica::debbugs',
-    is => 'rw',
+    is  => 'rw',
 );
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
 sub run {
     my $self = shift;
-    my %args = validate( @_, {
+    my %args = validate(
+        @_,
+        {
             # mandatory args go here
             example => 1,
         }
@@ -23,9 +25,10 @@ sub run {
 }
 
 our %PROP_MAP = (
-    remote_prop             => 'sd_prop',
+    remote_prop => 'sd_prop',
+
     # ...
-}
+);
 
 =head2 translate_prop_names L<Prophet::ChangeSet>
 
@@ -50,7 +53,7 @@ it's resolve_user_id_to. What's this for, actually?
 sub resolve_user_id_to_email {
     my $self = shift;
     my $id   = shift;
-    return undef unless ($id);
+    return unless ($id);
 
     # ...
 
@@ -65,7 +68,7 @@ memoize 'resolve_user_id_to_email';
 
 sub find_matching_tickets {
     my $self = shift;
-    my ($query) = validate_pos(@_, 1);
+    my ($query) = validate_pos( @_, 1 );
     return $self->sync_source->rt->search( type => 'ticket', query => $query );
 }
 
@@ -76,6 +79,7 @@ sub find_matching_tickets {
 sub find_matching_transactions {
     my $self = shift;
     my %args = validate( @_, { task => 1, starting_transaction => 1 } );
+    my @matched;
 
     # ...
 

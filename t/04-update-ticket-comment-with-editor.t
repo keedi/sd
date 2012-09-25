@@ -6,26 +6,28 @@ use App::SD::Test;
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag 'export SD_REPO=' . $ENV{'PROPHET_REPO'} . "\n";
     Prophet::Test->set_editor_script('ticket-comment-update-editor.pl');
 }
 
-run_script( 'sd', [ 'init', '--non-interactive']);
-
+run_script( 'sd', [ 'init', '--non-interactive' ] );
 
 my $replica_uuid = replica_uuid;
 
 # create ticket
-my ($ticket_id, $ticket_uuid) = create_ticket_ok( '--summary', 'zomg!' );
+my ( $ticket_id, $ticket_uuid ) = create_ticket_ok( '--summary', 'zomg!' );
 
 # create comment
-my ($comment_id, $comment_uuid) = create_ticket_comment_ok(
-    '--content' => 'a new comment', '--id' => $ticket_id
+my ( $comment_id, $comment_uuid ) = create_ticket_comment_ok(
+    '--content' => 'a new comment',
+    '--id'      => $ticket_id
 );
 
 # verify that it's correct (test prop won't be shown)
-run_output_matches( 'sd',
+run_output_matches(
+    'sd',
     [ 'ticket', 'comment', 'show', '--batch', '--id', $comment_id ],
     [
         "id: $comment_id ($comment_uuid)",
@@ -38,10 +40,12 @@ run_output_matches( 'sd',
 );
 
 # update it
-App::SD::Test->update_ticket_comment_with_editor_ok($comment_id, $comment_uuid);
+App::SD::Test->update_ticket_comment_with_editor_ok( $comment_id,
+    $comment_uuid );
 
 # check output
-run_output_matches( 'sd',
+run_output_matches(
+    'sd',
     [ 'ticket', 'comment', 'show', '--batch', '--id', $comment_id ],
     [
         "id: $comment_id ($comment_uuid)",

@@ -1,4 +1,4 @@
- package App::SD::Replica::gcode;
+package App::SD::Replica::gcode;
 use Any::Moose;
 extends qw/App::SD::ForeignReplica/;
 
@@ -7,7 +7,7 @@ use File::Temp 'tempdir';
 use Memoize;
 use Try::Tiny;
 
-use constant scheme => 'gcode';
+use constant scheme       => 'gcode';
 use constant pull_encoder => 'App::SD::Replica::gcode::PullEncoder';
 use constant push_encoder => 'App::SD::Replica::gcode::PushEncoder';
 use Prophet::ChangeSet;
@@ -26,13 +26,12 @@ our %PROP_MAP = (
     blockedon  => 'blocked_on',
 );
 
-
 has query            => ( isa => 'Str', is               => 'rw');
 has gcode            => ( isa => 'Net::Google::Code', is => 'rw');
 has project          => ( isa => 'Str', is               => 'rw');
 has foreign_username => ( isa => 'Str', is               => 'rw' );
 
-sub remote_url { return "http://code.google.com/p/".shift->project}
+sub remote_url { return "http://code.google.com/p/" . shift->project }
 
 sub BUILD {
     my $self = shift;
@@ -41,9 +40,10 @@ sub BUILD {
     try {
         require Net::Google::Code;
         require Net::Google::Code::Issue;
-    } catch {
-        die "SD requires Net::Google::Code to sync with Google Code.\n".
-        "'cpan Net::Google::Code' may sort this out for you.\n";
+    }
+    catch {
+        die "SD requires Net::Google::Code to sync with Google Code.\n"
+          . "'cpan Net::Google::Code' may sort this out for you.\n";
     };
 
     $Net::Google::Code::Issue::USE_HYBRID = 1
@@ -52,9 +52,9 @@ sub BUILD {
     my ( $userinfo, $project, $query ) =
       $self->{url} =~ m!^gcode:(?:(.*)@)?(.*?)(?:/(.*))?$!
       or die
-"Can't parse Google::Code server spec. Expected gcode:k9mail or gcode:user:password\@k9mail or gcode:user:password\@k9mail/q=string&can=all";
+      "Can't parse Google::Code server spec. Expected gcode:k9mail or gcode:user:password\@k9mail or gcode:user:password\@k9mail/q=string&can=all";
     $self->project($project);
-    $self->url($project); # url should be raw url minus scheme and auth info
+    $self->url($project);    # url should be raw url minus scheme and auth info
     $self->query($query) if defined $query;
 
     # Since we don't need a username / password to clone or pull, we don't save
@@ -64,23 +64,26 @@ sub BUILD {
     # username/password specified in the url.
 
     my ( $email, $password );
-    if ( $userinfo ) {
+    if ($userinfo) {
         ( $email, $password ) = split /:/, $userinfo, 2;
     }
 
     my %gcode_args = ( project => $self->project );
-    $gcode_args{email} = $email if $email;
+    $gcode_args{email}    = $email    if $email;
     $gcode_args{password} = $password if $password;
+
     # should never fail (no auth performed on create)
-    $self->gcode( Net::Google::Code->new( %gcode_args ) );
+    $self->gcode( Net::Google::Code->new(%gcode_args) );
 
     try {
         $self->gcode->load();
-    } catch {
+    }
+    catch {
         if ( $_ =~ m{Error GETing .*: Not Found} ) {
-            die "The Google Code project '$project' does not exist. Aborting!\n";
-        }
-        else {
+            die
+              "The Google Code project '$project' does not exist. Aborting!\n";
+        } else {
+
             # some other error
             die $_;
         }
@@ -91,9 +94,10 @@ sub get_txn_list_by_date {
     my $self   = shift;
     my $ticket = shift;
 
-    my $ticket_obj = Net::Google::Code::Issue->new( project => $self->project);
+    my $ticket_obj =
+      Net::Google::Code::Issue->new( project => $self->project );
     $ticket_obj->load($ticket);
-        
+
     my @txns = map {
         {
             id      => $_->sequence,
@@ -101,24 +105,26 @@ sub get_txn_list_by_date {
             created => $_->date->epoch,
         }
       }
-      sort { $b->date <=> $a->date } @{ $ticket_obj->comments };
+      sort {
+        $b->date <=> $a->date
+      } @{ $ticket_obj->comments };
     return @txns;
 }
 
 sub remote_uri_path_for_comment {
     my $self = shift;
-    my $id = shift;
-    return "/comment/".$id;
+    my $id   = shift;
+    return "/comment/" . $id;
 }
 
 sub remote_uri_path_for_id {
     my $self = shift;
-    my $id = shift;
-    return "/ticket/".$id;
+    my $id   = shift;
+    return "/ticket/" . $id;
 }
 
 sub database_settings {
-    my $self = shift;
+    my $self  = shift;
     my $issue = $self->gcode->issue;
     $issue->load_predefined;
     my $status = $issue->predefined_status;
@@ -126,9 +132,9 @@ sub database_settings {
         project_name => $self->project,
         $status
         ? (
-            active_statuses => [ map { lc } @{ $status->{open} } ],
+            active_statuses => [ map {lc} @{ $status->{open} } ],
             statuses =>
-              [ map { lc } @{ $status->{open} }, @{ $status->{closed} } ]
+              [ map {lc} @{ $status->{open} }, @{ $status->{closed} } ]
           )
         : (
             active_statuses => [qw/new accepted started/],

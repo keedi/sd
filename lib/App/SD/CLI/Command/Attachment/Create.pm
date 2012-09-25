@@ -9,14 +9,14 @@ sub run {
 
     $self->print_usage if $self->has_arg('h');
 
-    my $content = $self->get_content(type => 'attachment');
+    my $content = $self->get_content( type => 'attachment' );
 
     die "Aborted.\n"
-        if length($content) == 0;
+      if length($content) == 0;
 
-    $self->set_prop(content => $content);
+    $self->set_prop( content => $content );
     $self->SUPER::run(@_);
-};
+}
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

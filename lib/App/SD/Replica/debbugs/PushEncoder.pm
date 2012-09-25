@@ -47,7 +47,7 @@ sub integrate_change {
             $id = $self->integrate_ticket_update( $change, $changeset );
 
         } else {
-            return undef;
+            return;
         }
 
         $self->sync_source->record_pushed_transactions(

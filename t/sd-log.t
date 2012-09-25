@@ -11,20 +11,23 @@ no warnings 'once';
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'}
-        = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag $ENV{'PROPHET_REPO'};
 }
 
-run_script( 'sd', [ 'init', '--non-interactive']);
+run_script( 'sd', [ 'init', '--non-interactive' ] );
 
 my $replica_uuid = replica_uuid;
 
 # create a ticket
-my ($log_id, $log_uuid) = create_ticket_ok( '--', 'summary', 'logs rock!');
+my ( $log_id, $log_uuid ) = create_ticket_ok( '--', 'summary', 'logs rock!' );
+
 # check the log
 
-run_output_matches( 'sd', [ 'log', 'LATEST' ],
+run_output_matches(
+    'sd',
+    [ 'log', 'LATEST' ],
     [
         qr/^$/,
         qr/^=+$/,
@@ -40,18 +43,27 @@ run_output_matches( 'sd', [ 'log', 'LATEST' ],
         qr/milestone: set to alpha/,
         qr/reporter: set to $ENV{PROPHET_EMAIL}/,
         qr/^$/,
-    ], [], "log output is correct",
-);
-# change a prop
-run_output_matches( 'sd', [ 'ticket',  
-    'update', '--uuid', $log_uuid, '--', '--reporter', 'foo@bar.com',
     ],
-    [qr/Ticket $log_id \($log_uuid\) updated/], #stdout
-   [], # stderr
-   "deleting a prop went ok",
+    [],
+    "log output is correct",
 );
+
+# change a prop
+run_output_matches(
+    'sd',
+    [
+        'ticket', 'update',     '--uuid', $log_uuid,
+        '--',     '--reporter', 'foo@bar.com',
+    ],
+    [qr/Ticket $log_id \($log_uuid\) updated/],    #stdout
+    [],                                            # stderr
+    "deleting a prop went ok",
+);
+
 # check the log
-run_output_matches( 'sd', [ 'log', 'LATEST' ],
+run_output_matches(
+    'sd',
+    [ 'log', 'LATEST' ],
     [
         '',
         qr/^=+/,
@@ -60,7 +72,9 @@ run_output_matches( 'sd', [ 'log', 'LATEST' ],
         qr/^-+/,
         qr/reporter: changed from $ENV{PROPHET_EMAIL} to foo\@bar.com/,
         '',
-    ], [], "log output is correct",
+    ],
+    [],
+    "log output is correct",
 );
 
 # delete a prop XXX delete is currently implemented only as setting a prop

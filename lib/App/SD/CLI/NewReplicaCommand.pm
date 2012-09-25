@@ -14,23 +14,25 @@ sub new_replica_wizard {
 
     # non-interactive option is useful for testing and scriptability
     unless ( $self->has_arg('non-interactive') ) {
+
         # don't prompt for configuration if there's already a user-wide email set
-        if ( ! defined $self->config->get( key => 'user.email-address' ) ) {
+        if ( !defined $self->config->get( key => 'user.email-address' ) ) {
 
             print "\nYou need an email address configured to use SD. I'll try"
-                ." to find one.\n";
+              . " to find one.\n";
 
             if ( $ENV{PROPHET_EMAIL} ) {
-                $self->_migrate_email_from_env( 'PROPHET_EMAIL' );
+                $self->_migrate_email_from_env('PROPHET_EMAIL');
             }
         }
-        if ( ! defined $self->config->get( key => 'user.email-address' ) ) {
+        if ( !defined $self->config->get( key => 'user.email-address' ) ) {
             if ( $ENV{EMAIL} ) {
-                $self->_migrate_email_from_env( 'EMAIL' );
+                $self->_migrate_email_from_env('EMAIL');
             }
         }
+
         # if we still don't have an email, ask
-        if ( ! defined $self->config->get( key => 'user.email-address' ) ) {
+        if ( !defined $self->config->get( key => 'user.email-address' ) ) {
             $self->_prompt_email;
         }
 
@@ -52,30 +54,29 @@ END_MSG
 
 # default is the replica-specific config file
 sub _prompt_which_config_file {
-    my $self = shift;
+    my $self  = shift;
     my $email = shift;
 
     print "\nUse '$email' for (a)ll your bug databases, (j)ust"
-            ." this one,\nor (n)ot at all? [a/J/n] ";
+      . " this one,\nor (n)ot at all? [a/J/n] ";
     chomp( my $response = <STDIN> );
 
-    my $config_file = lc $response eq 'a'
-        ? $self->config->user_file
-        : lc $response eq 'n'
-        ? undef
-        : $self->config->replica_config_file;
+    my $config_file =
+        lc $response eq 'a' ? $self->config->user_file
+      : lc $response eq 'n' ? undef
+      :                       $self->config->replica_config_file;
 
     return $config_file;
 }
 
 sub _migrate_email_from_env {
     my $self = shift;
-    my $var = shift;
+    my $var  = shift;
 
     print "Found '$ENV{$var}' in \$$var.\n";
     my $config_file = $self->_prompt_which_config_file( $ENV{$var} );
 
-    if ( $config_file ) {
+    if ($config_file) {
         $self->config->set(
             key      => 'user.email-address',
             value    => $ENV{$var},
@@ -88,11 +89,12 @@ sub _migrate_email_from_env {
 sub _prompt_email {
     my $self = shift;
 
-    Prophet::CLI->end_pager(); # XXX where does this get turned back on?
-    print "\nCouldn't determine an email address to attribute your SD changes to.\n";
+    Prophet::CLI->end_pager();    # XXX where does this get turned back on?
+    print
+      "\nCouldn't determine an email address to attribute your SD changes to.\n";
 
     my $email;
-    while ( ! $email ) {
+    while ( !$email ) {
         print "What email shall I use? ";
         chomp( $email = <STDIN> );
     }
@@ -100,9 +102,10 @@ sub _prompt_email {
     my $use_dir_config = $self->prompt_choices( 'j', 'a',
         'Use this for (a)ll your SD databases or (j)ust this one?' );
 
-    my $config_file = $use_dir_config
-                    ? $self->config->replica_config_file
-                    : $self->config->user_file;
+    my $config_file =
+        $use_dir_config
+      ? $self->config->replica_config_file
+      : $self->config->user_file;
     $self->config->set(
         key      => 'user.email-address',
         value    => $email,
@@ -114,18 +117,15 @@ sub _prompt_email {
 sub _prompt_edit_settings {
     my $self = shift;
 
-    my $prompt_for_settings
-        = $self->prompt_Yn(
-            "\nWant to edit your new bug database's settings now?" );
-    if ( $prompt_for_settings ) {
+    my $prompt_for_settings =
+      $self->prompt_Yn("\nWant to edit your new bug database's settings now?");
+    if ($prompt_for_settings) {
         my @classes = App::SD::CLI::Dispatcher->class_names('Settings');
         for my $class (@classes) {
             $self->app_handle->try_to_require($class) or next;
 
             # reset args for new command
-            my $args = {
-                edit => 1,
-            };
+            my $args = { edit => 1, };
             $self->context->mutate_attributes( args => $args );
 
             my $command = $class->new(

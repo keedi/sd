@@ -30,7 +30,10 @@ sub render_templates_into {
 
     require App::SD::Server;
     my $server = App::SD::Server::Static->new(
-        read_only => 1, static => 1, app_handle => $self->app_handle );
+        read_only  => 1,
+        static     => 1,
+        app_handle => $self->app_handle
+    );
     $server->static(1);
     $server->setup_template_roots();
     use CGI;
@@ -45,39 +48,41 @@ sub render_templates_into {
         my $seen  = {};
         while ( my $file = shift @links ) {
             next if $seen->{$file};
-	    local $ENV{'REQUEST_URI'} = $file;
+            local $ENV{'REQUEST_URI'} = $file;
             try {
                 $cgi->path_info($file);
                 my $content = $server->handle_request($cgi);
 
-		if ( defined $content ) {
-		    my $page_links = [];
-		    ( $content, $page_links ) = $self->work_with_urls( $file, $content );
+                if ( defined $content ) {
+                    my $page_links = [];
+                    ( $content, $page_links ) =
+                      $self->work_with_urls( $file, $content );
 
-		    push @links, grep { !$seen->{$_} } @$page_links;
+                    push @links, grep { !$seen->{$_} } @$page_links;
 
-		    $self->write_file( $dir, $file, $content );
+                    $self->write_file( $dir, $file, $content );
 
-		    $seen->{$file}++;
-		}
-            } catch {
-		if ( $_ =~ /^REDIRECT (.*)$/ ) {
-		    my $new_file = $1;
-		    chomp($new_file);
-		    $self->handle_redirect( $dir, $file, $new_file );
-		    unshift @links, $new_file;
-		} elsif ($_) { # rethrow
-		    die $_;
-		}
-	    };
+                    $seen->{$file}++;
+                }
+            }
+            catch {
+                if ( $_ =~ /^REDIRECT (.*)$/ ) {
+                    my $new_file = $1;
+                    chomp($new_file);
+                    $self->handle_redirect( $dir, $file, $new_file );
+                    unshift @links, $new_file;
+                } elsif ($_) {    # rethrow
+                    die $_;
+                }
+            };
         }
     }
 }
 
 sub work_with_urls {
-    my $self     = shift;
+    my $self        = shift;
     my $current_url = shift;
-    my $content  = shift;
+    my $content     = shift;
 
     my $current_depth = () = $current_url =~ m{.+?/}g;
 
@@ -88,7 +93,7 @@ sub work_with_urls {
     $h->parse_content($content);
 
     my $link_elements = $h->extract_links(qw(img href script style a link ));
-    return ($content, []) unless @$link_elements;
+    return ( $content, [] ) unless @$link_elements;
 
     my $all_links = {};
 
@@ -99,12 +104,12 @@ sub work_with_urls {
         my $element = shift @$link_element;    #HTML::Element Object
 
         $all_links->{$link}++;
-        
+
         my $url = $link;
 
         if ( $url =~ m|/$| ) {
-            $url .= "index.html" 
-        } elsif ($url !~ /\.\w{2,4}$/) {
+            $url .= "index.html";
+        } elsif ( $url !~ /\.\w{2,4}$/ ) {
             $url .= ".html";
         }
 
@@ -113,9 +118,9 @@ sub work_with_urls {
             $url = ( '../' x $current_depth ) . $url;
         }
 
-        my ($attr)
-            = grep { defined $element->attr($_) and $link eq $element->attr($_) }
-            @{ $HTML::Tagset::linkElements{ $element->tag } };
+        my ($attr) =
+          grep { defined $element->attr($_) and $link eq $element->attr($_) }
+          @{ $HTML::Tagset::linkElements{ $element->tag } };
 
         $element->attr( $attr, $url );
     }
@@ -124,7 +129,8 @@ sub work_with_urls {
 
     # we nned to turn every link into absolute, here is to find out dir info
     # e.g. if $current_url is '/foo/bar/baz.html', @dirs will be qw/foo bar/
-    my @dirs = grep { $_ } split m{/}, $current_url;
+    my @dirs = grep {$_} split m{/}, $current_url;
+
     # pop the page name like history.html
     pop @dirs;
 
@@ -139,6 +145,7 @@ sub work_with_urls {
         if ( $link !~ m{^/} ) {
             my $depth = $link =~ s{\.\./}{}g;
             my @tmp_dirs = @dirs;
+
             # remove trailing dirs according to $depth
             if ($depth) {
                 pop @tmp_dirs while $depth--;
@@ -161,10 +168,14 @@ sub handle_redirect {
     my $redirected_to   = File::Spec->catfile( $dir => $new_file );
     {
         my $parent = Prophet::Util->updir($redirected_from);
+
         # mkpath succeeds (but returns nothing) if a directory already exists
         eval { mkpath( [$parent] ) };
-        if ( $@ ) {
-            die "Failed to create directory " . $parent . " - for $redirected_to " . $@;
+        if ($@) {
+            die "Failed to create directory "
+              . $parent
+              . " - for $redirected_to "
+              . $@;
         }
     }
     if ( -d $redirected_from ) { $redirected_from .= "/index.html"; }
@@ -178,11 +189,14 @@ sub write_file {
     my $content = shift;
 
     if ( $file =~ qr|/$| ) {
-        $file .= "index.html" 
-    } elsif ($file !~ /\.\w{2,4}$/) {
+        $file .= "index.html";
+    } elsif ( $file !~ /\.\w{2,4}$/ ) {
         $file .= ".html";
     }
-    Prophet::Util->write_file( file => File::Spec->catfile( $dir => $file ), content => $content );
+    Prophet::Util->write_file(
+        file    => File::Spec->catfile( $dir => $file ),
+        content => $content
+    );
 
 }
 
@@ -199,7 +213,9 @@ sub log_request { }
 
 sub send_content {
     my $self = shift;
-    my %args = validate( @_, { content => 1, content_type => 0, encode_as => 0, static => 0 } );
+    my %args =
+      validate( @_,
+        { content => 1, content_type => 0, encode_as => 0, static => 0 } );
 
     if ( $args{'encode_as'} && $args{'encode_as'} eq 'json' ) {
         $args{'content'} = to_json( $args{'content'} );
@@ -214,7 +230,7 @@ sub _send_redirect {
     die "REDIRECT " . $args{to} . "\n";
 }
 
-sub _send_404 {}
+sub _send_404 { }
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

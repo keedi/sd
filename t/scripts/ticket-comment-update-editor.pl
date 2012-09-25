@@ -6,6 +6,6 @@ use warnings;
 # command
 
 while (<>) {
-     print "huzzah!";
+    print "huzzah!";
 }
 

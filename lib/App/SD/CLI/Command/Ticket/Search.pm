@@ -3,10 +3,12 @@ use Any::Moose;
 extends 'Prophet::CLI::Command::Search';
 with 'App::SD::CLI::Command';
 
-sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  s => 'sort', g => 'group'  };
+sub ARG_TRANSLATIONS {
+    shift->SUPER::ARG_TRANSLATIONS(), s => 'sort', g => 'group';
+}
 
 override usage_msg => sub {
-    my $self = shift;
+    my $self   = shift;
     my $script = $self->cli->get_script_name;
 
     my @primary_commands = @{ $self->context->primary_commands };
@@ -29,26 +31,26 @@ override run => sub {
 
     $self->print_usage if $self->has_arg('h');
 
-    if (  (!$self->has_arg('sort') || !$self->arg('sort'))
-        && $self->app_handle->config->get( key => 'ticket.default-sort') )
+    if ( ( !$self->has_arg('sort') || !$self->arg('sort') )
+        && $self->app_handle->config->get( key => 'ticket.default-sort' ) )
     {
-        $self->set_arg(
-            'sort' => $self->app_handle->config->get(
-                key => 'ticket.default-sort'
-            )
+        $self->set_arg( 'sort' =>
+              $self->app_handle->config->get( key => 'ticket.default-sort' ) );
+    }
+
+    if ( ( !$self->has_arg('group') || !$self->arg('group') )
+        && $self->app_handle->config->get( key => 'ticket.default-group' ) )
+    {
+        $self->set_arg( 'group' =>
+              $self->app_handle->config->get( key => 'ticket.default-group' )
         );
     }
 
-    if (  (!$self->has_arg('group') || !$self->arg('group'))
-        && $self->app_handle->config->get( key => 'ticket.default-group') )
-    {
-        $self->set_arg( 'group' =>
-              $self->app_handle->config->get( key => 'ticket.default-group') );
-    }
-
     # sort output by given prop if user specifies --sort
-    if ( $self->has_arg('sort') && $self->arg('sort')
-            && ( $self->arg('sort') ne 'none' ) ) {
+    if (   $self->has_arg('sort')
+        && $self->arg('sort')
+        && ( $self->arg('sort') ne 'none' ) )
+    {
 
         my $sort_prop = $self->arg('sort');
 
@@ -59,13 +61,15 @@ override run => sub {
             sub {
                 my $records = shift;
                 return $self->sort_by_prop( $sort_prop, $records,
-                                            $sort_undef_last );
+                    $sort_undef_last );
             }
         );
     }
 
-    if ( $self->has_arg('group') && $self->arg('group') && (
-            $self->arg('group') ne 'none' ) ) {
+    if (   $self->has_arg('group')
+        && $self->arg('group')
+        && ( $self->arg('group') ne 'none' ) )
+    {
         $self->group_routine(
             sub {
                 my $records = shift;
@@ -85,7 +89,7 @@ override run => sub {
                                 records => ( delete $group_hash{$_} || [] )
                             }
 
-                          } @$order
+                        } @$order
                     ];
                     return [
                         @$sorted_groups,

@@ -14,8 +14,8 @@ use App::SD::Test;
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'}
-        = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag "export SD_REPO=" . $ENV{'PROPHET_REPO'} . "\n";
 }
 
@@ -24,7 +24,8 @@ my $sd_lighthouseg_url =
 
 my ( $ret, $out, $err );
 ( $ret, $out, $err ) =
-  run_script( 'sd', [ 'clone', '--from', $sd_lighthouseg_url, '--non-interactive' ] );
+  run_script( 'sd',
+    [ 'clone', '--from', $sd_lighthouseg_url, '--non-interactive' ] );
 my $first_id;
 
 diag($err) if ($err);
@@ -34,14 +35,15 @@ run_output_matches(
     [qr/(.*?)(?{ $first_id = $1 }) test for sd/]
 );
 
-( $ret, $out, $err ) =
-  run_script( 'sd', [ 'ticket', 'comments', $first_id ] );
+( $ret, $out, $err ) = run_script( 'sd', [ 'ticket', 'comments', $first_id ] );
 like( $out, qr/first comment.*second comment/s, 'comments pulled' );
 
-( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_lighthouseg_url ] );
+( $ret, $out, $err ) =
+  run_script( 'sd', [ 'pull', '--from', $sd_lighthouseg_url ] );
 diag($err);
 
-run_script( 'sd', [ 'ticket', 'comment', $first_id, '-m', 'comment from sd' ] );
+run_script( 'sd',
+    [ 'ticket', 'comment', $first_id, '-m', 'comment from sd' ] );
 
 my $yatta_id;
 run_output_matches(
@@ -62,7 +64,11 @@ diag($out);
 diag($err);
 
 like( $out, qr/"content" set to "comment from sd"/, 'comment pushed' );
-like( $out, qr/"summary" set to "YATTA"/, 'ticket yatta pushed' );
+like( $out, qr/"summary" set to "YATTA"/,           'ticket yatta pushed' );
 unlike( $out, qr/test for sd/, 'pulled tickets not pushed' );
-unlike( $out, qr/first comment.*second comment/s, 'pulled comments not pushed' );
+unlike(
+    $out,
+    qr/first comment.*second comment/s,
+    'pulled comments not pushed'
+);
 

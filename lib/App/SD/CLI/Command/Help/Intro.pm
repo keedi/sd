@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Getting started with SD');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 SD is a peer to peer ticket tracking system built on the Prophet
 distributed database. SD is designed to make it easy to work with tickets
 and to share ticket databases with your collaborators.

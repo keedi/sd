@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Working with ticket attachments');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 
     ${cmd}ticket attachment create 456 --file bugfix.patch
     ${cmd}ticket attachment create 456 -f bugfix.patch

@@ -7,13 +7,13 @@ with 'App::SD::CLI::Model::Ticket';
 with 'App::SD::CLI::Command';
 with 'Prophet::CLI::TextEditorCommand';
 
-sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  e => 'edit'  };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(), e => 'edit' }
 
 # use actual valid ticket props in the help message, and make note of the
 # interactive editing mode
 override usage_msg => sub {
     my $self = shift;
-    my $cmd = $self->cli->get_script_name;
+    my $cmd  = $self->cli->get_script_name;
 
     my @primary_commands = @{ $self->context->primary_commands };
 
@@ -38,17 +38,20 @@ override run => sub {
     $self->print_usage if $self->has_arg('h');
 
     my @prop_set = $self->prop_set;
-    my $record = $self->_get_record_object;
+    my $record   = $self->_get_record_object;
 
     # only invoke editor if no props specified on the commandline or edit arg specified
-    return super() if (@{$self->prop_set} && !$self->has_arg('edit'));
+    return super() if ( @{ $self->prop_set } && !$self->has_arg('edit') );
 
     my $template_to_edit = $self->create_record_template();
 
     my $done = 0;
 
-    while (!$done) {
-      $done =  $self->try_to_edit( template => \$template_to_edit, record => $record);
+    while ( !$done ) {
+        $done = $self->try_to_edit(
+            template => \$template_to_edit,
+            record   => $record
+        );
     }
 
 };
@@ -57,8 +60,8 @@ sub process_template {
     my $self = shift;
     my %args = validate( @_, { template => 1, edited => 1, record => 1 } );
 
-    my $record      = $args{record};
-    my $updated     = $args{edited};
+    my $record  = $args{record};
+    my $updated = $args{edited};
     ( my $props_ref, my $comment ) = $self->parse_record_template($updated);
 
     for my $prop ( keys %$props_ref ) {
@@ -66,24 +69,23 @@ sub process_template {
     }
 
     my $error;
-        local $@;
-        eval { super(); } or chomp ($error = $@ || "Something went wrong!");
+    local $@;
+    eval { super(); } or chomp( $error = $@ || "Something went wrong!" );
 
     return $self->handle_template_errors(
-        error        => $error . "\n\nYou can bypass validation for a "
-                        ."property by appending a ! to it.",
+        error => $error
+          . "\n\nYou can bypass validation for a "
+          . "property by appending a ! to it.",
         template_ref => $args{template},
         bad_template => $updated,
         rtype        => $record->type,
     ) if ($error);
 
     $self->add_comment( content => $comment, uuid => $self->record->uuid )
-        if $comment;
+      if $comment;
 
     return 1;
 }
-
-
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

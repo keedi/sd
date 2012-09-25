@@ -1,25 +1,26 @@
-package App::SD::Record; 
+package App::SD::Record;
 use Any::Moose;
 use Params::Validate;
 
 extends 'Prophet::Record';
 
-override declared_props => sub { 'created' };
+override declared_props => sub {'created'};
 
 sub canonicalize_prop_created {
     my $self = shift;
-    my %args = validate(@_, { props => 1, errors => 1});
+    my %args = validate( @_, { props => 1, errors => 1 } );
 
     # has the record been created yet? if not, we don't want to try to
     # get its properties
     my $props = $self->uuid ? $self->get_props : {};
 
-    my $created = $args{props}->{created}
-               || $args{props}->{date}
-               || $props->{created}
-               || $props->{date};
+    my $created =
+         $args{props}->{created}
+      || $args{props}->{date}
+      || $props->{created}
+      || $props->{date};
 
-    if (!$created ) {
+    if ( !$created ) {
         my @now = gmtime();
 
         $args{props}->{created} = sprintf(
@@ -35,6 +36,5 @@ sub canonicalize_prop_created {
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
-
 
 1;

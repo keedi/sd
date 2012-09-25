@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Database Settings');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 The 'settings' command allows you to modify configuration variables
 that propagate with the current database, known as settings.
 

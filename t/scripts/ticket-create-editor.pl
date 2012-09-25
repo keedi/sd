@@ -5,25 +5,25 @@ use Prophet::Test::Editor;
 
 # perl script to trick Proc::InvokeEditor with for the ticket create command
 
-
 Prophet::Test::Editor::edit(
-    tmpl_files => { '--no-args' => 'sd-ticket-create.tmpl',
-                   '--all-props' => 'sd-ticket-create.tmpl',
-                   '--verbose' => 'sd-ticket-create-verbose.tmpl',
-                   '--verbose-and-all' => 'sd-ticket-create-verbose.tmpl',
-                 },
+    tmpl_files => {
+        '--no-args'         => 'sd-ticket-create.tmpl',
+        '--all-props'       => 'sd-ticket-create.tmpl',
+        '--verbose'         => 'sd-ticket-create-verbose.tmpl',
+        '--verbose-and-all' => 'sd-ticket-create-verbose.tmpl',
+    },
     edit_callback => sub {
         my %args = @_;
 
         s/(?<=^summary: ).*$/we are testing sd ticket create/;
         print;
 
-        if ( /^=== add new ticket comment below ===$/) {
+        if (/^=== add new ticket comment below ===$/) {
             my $errors = [];
             my $template_ok =
-                Prophet::Test::Editor::check_template_by_line($args{template},
+              Prophet::Test::Editor::check_template_by_line( $args{template},
                 $args{valid_template}, $args{replica_uuid},
-                $args{ticket_uuid}, $errors);
+                $args{ticket_uuid}, $errors );
             if ($template_ok) {
                 print "template ok!\n";
             } else {
@@ -32,6 +32,7 @@ Prophet::Test::Editor::edit(
             }
         }
 
-      },
-    verify_callback => sub {},
-  );
+    },
+    verify_callback => sub {
+    },
+);

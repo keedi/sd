@@ -9,7 +9,8 @@ has project_name => (
     default => sub {
         my $self = shift;
         if ( $self->app_handle->handle->replica_exists ) {
-            return $self->app_handle->setting( label => 'project_name' )->get()->[0];
+            return $self->app_handle->setting( label => 'project_name' )
+              ->get()->[0];
         } else {
             return 'No database found';
         }
@@ -18,7 +19,7 @@ has project_name => (
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->cli->get_script_name;
+    my $cmd  = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}\[cmd]
@@ -29,13 +30,16 @@ END_USAGE
 sub preamble {
     my $self = shift;
     my @out  = (
-        "SD for " . $self->project_name . " ($App::SD::VERSION; Prophet $Prophet::VERSION)",
+        "SD for "
+          . $self->project_name
+          . " ($App::SD::VERSION; Prophet $Prophet::VERSION)",
         'Type "help", "about", or "copying" for more information.'
     );
 
     if ( !$self->app_handle->handle->replica_exists ) {
-        push @out, '', "No SD database was found at " . $self->app_handle->handle->url(),
-            'Type "help init" and "help environment" for tips on how to sort that out.';
+        push @out, '',
+          "No SD database was found at " . $self->app_handle->handle->url(),
+          'Type "help init" and "help environment" for tips on how to sort that out.';
     }
 
     return join( "\n", @out );

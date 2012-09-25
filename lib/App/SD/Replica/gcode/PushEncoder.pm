@@ -19,12 +19,12 @@ sub integrate_change {
     );
     my ( $id, $record );
 
-# if the original_sequence_no of this changeset is <=
-# the last changeset our sync source for the original_sequence_no, we can skip it.
-# XXX TODO - this logic should be at the changeset level, not the cahnge level, as it applies to all
-# changes in the changeset
-#    warn $self->sync_source->app_handle->handle->last_changeset_from_source(
-#        $changeset->original_source_uuid ), "\n";
+    # if the original_sequence_no of this changeset is <=
+    # the last changeset our sync source for the original_sequence_no, we can skip it.
+    # XXX TODO - this logic should be at the changeset level, not the cahnge level, as it applies to all
+    # changes in the changeset
+    #    warn $self->sync_source->app_handle->handle->last_changeset_from_source(
+    #        $changeset->original_source_uuid ), "\n";
     return
       if $self->sync_source->app_handle->handle->last_changeset_from_source(
         $changeset->original_source_uuid ) >= $changeset->original_sequence_no;
@@ -32,19 +32,21 @@ sub integrate_change {
     my $before_integration = time();
 
     # grab any email/password that may have been specified in the --to url
-    my ( $email, $password ) = ($self->sync_source->gcode->email,
-                                $self->sync_source->gcode->password);
+    my ( $email, $password ) = ( $self->sync_source->gcode->email,
+        $self->sync_source->gcode->password );
 
-    ($email, $password) = $self->sync_source->login_loop(
-        uri => 'gcode:' . $self->sync_source->project,
-        username => $email, password => $password,
+    ( $email, $password ) = $self->sync_source->login_loop(
+        uri      => 'gcode:' . $self->sync_source->project,
+        username => $email,
+        password => $password,
+
         # remind the user that gcode logins are email addresses
         username_prompt => sub {
             my $project = shift;
             return "Login email for $project: ";
         },
         login_callback => sub {
-            my ($self, $email, $password) = @_;
+            my ( $self, $email, $password ) = @_;
 
             # gcode.pm's BUILD has already been called, so we don't need to
             # create the initial object, just specify auth
@@ -69,21 +71,17 @@ sub integrate_change {
                 uuid      => $change->record_uuid,
                 remote_id => $id,
             );
-        }
-        elsif ( $change->record_type eq 'attachment'
+        } elsif ( $change->record_type eq 'attachment'
             and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_attachment( $change, $changeset );
-        }
-        elsif ( $change->record_type eq 'comment'
+        } elsif ( $change->record_type eq 'comment'
             and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_comment( $change, $changeset );
-        }
-        elsif ( $change->record_type eq 'ticket' ) {
+        } elsif ( $change->record_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );
-        }
-        else {
+        } else {
             $self->sync_source->log(
                 'I have no idea what I am doing for ' . $change->record_uuid );
             return;
@@ -94,7 +92,8 @@ sub integrate_change {
             ticket     => $id,
             changeset  => $changeset,
         );
-    } catch {
+    }
+    catch {
         $self->sync_source->log( "Push error: " . $_ );
     };
 
@@ -168,7 +167,8 @@ sub integrate_attachment {
     my $ticket    = $self->sync_source->gcode->issue( id => $ticket_id, );
 
     my $tempdir = File::Temp::tempdir( CLEANUP => 1 );
-    my $file = File::Spec->catfile( $tempdir, ( $props{'name'} || 'unnamed' ) );
+    my $file =
+      File::Spec->catfile( $tempdir, ( $props{'name'} || 'unnamed' ) );
     open my $fh, '>', $file or die $!;
     print $fh $props{content};
     close $fh;
@@ -187,19 +187,16 @@ sub _recode_props_for_integrate {
     for my $key ( keys %props ) {
         if ( $key =~ /^(summary|owner|cc|blocked_on)/ ) {
             $attr{$key} = $props{$key};
-        }
-        elsif ( $key eq 'status' ) {
+        } elsif ( $key eq 'status' ) {
             $attr{$key} = ucfirst $props{$key};
-        }
-        elsif ( $key eq 'merged_into' ) {
-        # yeah, the comment form use 'merge_into' name
+        } elsif ( $key eq 'merged_into' ) {
+
+            # yeah, the comment form use 'merge_into' name
             $attr{merge_into} = $props{$key};
-        }
-        elsif ( $key eq 'tags' ) {
+        } elsif ( $key eq 'tags' ) {
             $attr{labels} ||= [];
-            push @{$attr{labels}}, split /\s*,\s*/, $props{$key};
-        }
-        else {
+            push @{ $attr{labels} }, split /\s*,\s*/, $props{$key};
+        } else {
             $attr{labels} ||= [];
             push @{ $attr{labels} },
               ( ucfirst $key ) . '-' . ucfirst $props{$key};

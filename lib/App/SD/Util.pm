@@ -89,7 +89,7 @@ sub string_to_datetime {
         }
     }
 
-    return undef;
+    return;
 }
 
 no Any::Moose;

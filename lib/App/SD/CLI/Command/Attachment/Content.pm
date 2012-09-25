@@ -9,8 +9,8 @@ sub run {
 
     $self->print_usage if $self->has_arg('h');
 
-    my $record =  $self->_get_record_object;
-    $record->load(uuid => $self->uuid);
+    my $record = $self->_get_record_object;
+    $record->load( uuid => $self->uuid );
     print $record->prop('content');
 }
 

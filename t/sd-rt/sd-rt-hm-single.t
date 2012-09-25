@@ -9,7 +9,7 @@ use Prophet::Test;
 use App::SD::Test;
 
 BEGIN {
-    unless (eval 'use RT::Test tests => "no_declare"; 1') {
+    unless ( eval 'use RT::Test tests => "no_declare"; 1' ) {
         diag $@;
         plan skip_all => 'requires RT 3.8 to run tests.';
     }
@@ -17,7 +17,8 @@ BEGIN {
 
 BEGIN {
     unless ( $ENV{'JIFTY_APP_ROOT'} ) {
-        plan skip_all => "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
+        plan skip_all =>
+          "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
     }
     require File::Temp;
     eval "use Jifty;";
@@ -62,34 +63,38 @@ my $ticket = RT::Client::REST::Ticket->new(
 my $root = BTDT::CurrentUser->superuser;
 my $as_root = BTDT::Model::User->new( current_user => $root );
 $as_root->load_by_cols( email => 'onlooker@example.com' );
-my ( $val, $msg ) = $as_root->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
+my ( $val, $msg ) =
+  $as_root->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
 ok( $val, $msg );
 my $GOODUSER = BTDT::CurrentUser->new( email => 'onlooker@example.com' );
-$GOODUSER->user_object->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
+$GOODUSER->user_object->set_accepted_eula_version(
+    Jifty->config->app('EULAVersion') );
 my $task = BTDT::Model::Task->new( current_user => $GOODUSER );
 $task->create(
     summary     => "YATTA",
     description => '',
 );
 
-my ( $yatta_id, $flyman_id, $flyman_uuid, $yatta_uuid);
+my ( $yatta_id, $flyman_id, $flyman_uuid, $yatta_uuid );
 my ( $ret, $out, $err );
 
 diag("Pull from Hiveminder");
 
 as_bob {
     local $ENV{SD_REPO} = $ENV{'PROPHET_REPO'};
-    ( $ret, $out, $err ) = run_script( 'sd',
+    ( $ret, $out, $err ) =
+      run_script( 'sd',
         [ 'clone', '--from', $sd_hm_url, '--non-interactive' ] );
     diag($err) if ($err);
-    run_output_matches( 'sd', [ 'ticket', 'list', '--regex', '.' ], [qr/^(.*?)(?{ $yatta_id = $1 }) YATTA .*/] );
-    $yatta_uuid = get_uuid_for_luid($yatta_id);
-
     run_output_matches(
         'sd',
         [ 'ticket', 'list', '--regex', '.' ],
-        [ "$yatta_id YATTA open" ]
+        [qr/^(.*?)(?{ $yatta_id = $1 }) YATTA .*/]
     );
+    $yatta_uuid = get_uuid_for_luid($yatta_id);
+
+    run_output_matches( 'sd', [ 'ticket', 'list', '--regex', '.' ],
+        ["$yatta_id YATTA open"] );
 };
 
 diag("Pull from RT");
@@ -98,14 +103,19 @@ as_bob {
     local $ENV{SD_REPO} = $ENV{'PROPHET_REPO'};
 
     diag("Bob pulling from RT");
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
     diag($err) if ($err);
-    run_output_matches( 'sd', [ 'ticket', 'list', '--regex', 'Fly Man' ], [qr/^(.*?)(?{ $flyman_id = $1 }) Fly Man new/] );
+    run_output_matches(
+        'sd',
+        [ 'ticket', 'list', '--regex', 'Fly Man' ],
+        [qr/^(.*?)(?{ $flyman_id = $1 }) Fly Man new/]
+    );
     $flyman_uuid = get_uuid_for_luid($flyman_id);
 
     run_output_matches_unordered(
         'sd',
-        [ 'ticket',                             'list', '--regex', '.' ],
+        [ 'ticket', 'list', '--regex', '.' ],
         [ reverse sort "$yatta_id YATTA open", "$flyman_id Fly Man new" ]
     );
 };
@@ -118,9 +128,9 @@ as_bob {
     diag($err) if ($err);
 
     my @ids = $rt->search(
-        type => 'ticket',
+        type  => 'ticket',
         query => "Subject LIKE 'YATTA'",
     );
-    is(@ids, 1, "pushed YATTA ticket to RT");
+    is( @ids, 1, "pushed YATTA ticket to RT" );
 };
 

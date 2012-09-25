@@ -8,37 +8,41 @@ no warnings 'once';
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'}
-        = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag $ENV{'PROPHET_REPO'};
 }
 
-run_script( 'sd', [ 'init', '--non-interactive']);
-
+run_script( 'sd', [ 'init', '--non-interactive' ] );
 
 my $replica_uuid = replica_uuid;
 
 # create from sd and push
 
-my ( $yatta_luid, $yatta_uuid )
-    = create_ticket_ok( '--summary', 'YATTA', '--status', 'new' );
+my ( $yatta_luid, $yatta_uuid ) =
+  create_ticket_ok( '--summary', 'YATTA', '--status', 'new' );
 
-my ( $comment_id, $comment_uuid )
-    = create_ticket_comment_ok( qw/--uuid/, $yatta_uuid, '--content',
+my ( $comment_id, $comment_uuid ) =
+  create_ticket_comment_ok( qw/--uuid/, $yatta_uuid, '--content',
     "'This is a test'" );
 ok($comment_uuid);
 
 run_output_matches(
     'sd',
     [ qw/ticket comments --uuid/, $yatta_uuid ],
-    [ qr/^id: \d+ \($comment_uuid\)/, qr/^created: /, '', "'This is a test'",
-    '' ], [], "Found the comment"
+    [
+        qr/^id: \d+ \($comment_uuid\)/,
+        qr/^created: /, '', "'This is a test'", ''
+    ],
+    [],
+    "Found the comment"
 );
 
 run_output_matches(
     'sd',
     [ qw/ticket comment show --batch --uuid/, $comment_uuid ],
-    [   qr/id: (\d+) \($comment_uuid\)/,
+    [
+        qr/id: (\d+) \($comment_uuid\)/,
         qr/This is a test/,
         qr/created: /,
         qr/creator: /,
@@ -51,9 +55,10 @@ run_output_matches(
 
 run_output_matches(
     'sd',
-    [   qw/ticket comment update --uuid/, $comment_uuid,
-        '--',
-        qw/--content/,                    "I hate you"
+    [
+        qw/ticket comment update --uuid/, $comment_uuid,
+        '--',                             qw/--content/,
+        "I hate you"
     ],
     [qr/Comment \d+ \($comment_uuid\) updated/],
     [],
@@ -63,7 +68,8 @@ run_output_matches(
 run_output_matches(
     'sd',
     [ qw/ticket comment show --batch --uuid/, $comment_uuid ],
-    [ qr/id: (\d+) \($comment_uuid\)/, 
+    [
+        qr/id: (\d+) \($comment_uuid\)/,
         qr/I hate you/,
         qr/created: /i,
         qr/creator: /i,
@@ -84,9 +90,10 @@ run_output_matches(
 
 run_output_matches(
     'sd',
-    [   qw/ticket comment update --uuid/, $comment_uuid,
-        '--',
-        qw/--content/,                    "A\nmultiline\ncomment"
+    [
+        qw/ticket comment update --uuid/, $comment_uuid,
+        '--',                             qw/--content/,
+        "A\nmultiline\ncomment"
     ],
     [qr/Comment \d+ \($comment_uuid\) updated/],
     [],
@@ -96,7 +103,8 @@ run_output_matches(
 run_output_matches(
     'sd',
     [ qw/ticket comment show --batch --uuid/, $comment_uuid ],
-    [ qr/id: (\d+) \($comment_uuid\)/, 
+    [
+        qr/id: (\d+) \($comment_uuid\)/,
         qr/^content: A/,
         qr/^multiline$/,
         qr/^comment$/,

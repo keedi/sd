@@ -17,12 +17,12 @@ sub integrate_change {
     );
     my ( $id, $record );
 
-# if the original_sequence_no of this changeset is <=
-# the last changeset our sync source for the original_sequence_no, we can skip it.
-# XXX TODO - this logic should be at the changeset level, not the cahnge level, as it applies to all
-# changes in the changeset
-#    warn $self->sync_source->app_handle->handle->last_changeset_from_source(
-#        $changeset->original_source_uuid ), "\n";
+    # if the original_sequence_no of this changeset is <=
+    # the last changeset our sync source for the original_sequence_no, we can skip it.
+    # XXX TODO - this logic should be at the changeset level, not the cahnge level, as it applies to all
+    # changes in the changeset
+    #    warn $self->sync_source->app_handle->handle->last_changeset_from_source(
+    #        $changeset->original_source_uuid ), "\n";
     return
       if $self->sync_source->app_handle->handle->last_changeset_from_source(
         $changeset->original_source_uuid ) >= $changeset->original_sequence_no;
@@ -38,16 +38,13 @@ sub integrate_change {
                 uuid      => $change->record_uuid,
                 remote_id => $id,
             );
-        }
-        elsif ( $change->record_type eq 'comment'
+        } elsif ( $change->record_type eq 'comment'
             and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_comment( $change, $changeset );
-        }
-        elsif ( $change->record_type eq 'ticket' ) {
+        } elsif ( $change->record_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );
-        }
-        else {
+        } else {
             $self->sync_source->log(
                 'I have no idea what I am doing for ' . $change->record_uuid );
             return;
@@ -79,11 +76,11 @@ sub integrate_ticket_update {
     my $remote_ticket_id =
       $self->sync_source->remote_id_for_uuid( $change->record_uuid );
     my $ticket = $self->sync_source->github->issue();
-    my $attr = $self->_recode_props_for_integrate($change);
+    my $attr   = $self->_recode_props_for_integrate($change);
     $ticket->edit( $remote_ticket_id, $attr->{title}, $attr->{body} );
     if ( $attr->{status} ) {
-        $ticket->reopen( $remote_ticket_id ) if $attr->{status} eq 'open';
-        $ticket->close( $remote_ticket_id ) if $attr->{status} eq 'closed';
+        $ticket->reopen($remote_ticket_id) if $attr->{status} eq 'open';
+        $ticket->close($remote_ticket_id)  if $attr->{status} eq 'closed';
     }
     return $remote_ticket_id;
 }
@@ -98,13 +95,16 @@ sub integrate_ticket_create {
 
     # Build up a ticket object out of all the record's attributes
     my $attr = $self->_recode_props_for_integrate($change);
-    my $new = $self->sync_source->github->issue->create_issue({
-        title => $attr->{title},
-        body => $attr->{body},
-        #assignee => "octocat",
-        #milestone => 1,
-        #labels => [],
-    });
+    my $new  = $self->sync_source->github->issue->create_issue(
+        {
+            title => $attr->{title},
+            body  => $attr->{body},
+
+            #assignee => "octocat",
+            #milestone => 1,
+            #labels => [],
+        }
+    );
 
     # TODO: better error handler?
     if ( $new->{error} ) {
@@ -131,7 +131,7 @@ sub integrate_comment {
         $ticket_id,
         {
             body => $props{'content'},
-            
+
         }
     );
     return $ticket_id;
@@ -147,11 +147,9 @@ sub _recode_props_for_integrate {
     for my $key ( keys %props ) {
         if ( $key eq 'summary' ) {
             $attr{title} = $props{$key};
-        }
-        elsif ( $key eq 'body' ) {
+        } elsif ( $key eq 'body' ) {
             $attr{$key} = $props{$key};
-        }
-        elsif ( $key eq 'status' ) {
+        } elsif ( $key eq 'status' ) {
             $attr{state} = $props{$key} =~ /new|open/ ? 'open' : 'closed';
         }
     }

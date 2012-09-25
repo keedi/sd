@@ -6,11 +6,14 @@ use App::SD::Test;
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag "export SD_REPO=" . $ENV{'PROPHET_REPO'} . "\n";
 }
 
-unless (`which trac-admin`) { plan skip_all => 'You need trac installed to run the tests'; }
+unless (`which trac-admin`) {
+    plan skip_all => 'You need trac installed to run the tests';
+}
 unless ( eval { require Net::Trac } ) {
     plan skip_all => 'You need Net::Trac installed to run the tests';
 }
@@ -41,14 +44,15 @@ is( count_tickets_in_trac(), 0 );
 # Clone from trac
 #
 
-my ( $ret, $out, $err )
-    = run_script( 'sd', [ 'clone', '--from', $sd_trac_url, '--non-interactive' ] );
+my ( $ret, $out, $err ) =
+  run_script( 'sd', [ 'clone', '--from', $sd_trac_url, '--non-interactive' ] );
 is( count_tickets_in_sd(), 0 );
-ok(!($?>>8), $out." ".$err);
+ok( !( $? >> 8 ), $out . " " . $err );
 #
 # create a ticket in sd
 #
-my ( $yatta_id, $yatta_uuid ) = create_ticket_ok( '--summary', 'This ticket originated in SD' );
+my ( $yatta_id, $yatta_uuid ) =
+  create_ticket_ok( '--summary', 'This ticket originated in SD' );
 
 run_output_matches(
     'sd', [ 'ticket',
@@ -60,7 +64,8 @@ run_output_matches(
 run_output_matches(
     'sd',
     [ 'ticket', 'basics', '--batch', '--id', $yatta_id ],
-    [   "id: $yatta_id ($yatta_uuid)",
+    [
+        "id: $yatta_id ($yatta_uuid)",
         'summary: This ticket originated in SD',
         'status: new',
         'milestone: alpha',
@@ -84,16 +89,19 @@ test_push_of_attachment();
 
 sub test_push_of_attachment {
 
-	my ($fh, $filename) = File::Temp::tempfile(SUFFIX => '.txt', UNLINK => 1);
-	print $fh "TIMTOWTDI\n";
-	close $fh;
-	sleep 2; # to make trac happy
-    ( $ret, $out, $err )
-        = run_script( 'sd', [ 'ticket', 'attachment', 'create', $yatta_id, '--file', $filename ] );
+    my ( $fh, $filename ) =
+      File::Temp::tempfile( SUFFIX => '.txt', UNLINK => 1 );
+    print $fh "TIMTOWTDI\n";
+    close $fh;
+    sleep 2;    # to make trac happy
+    ( $ret, $out, $err ) =
+      run_script( 'sd',
+        [ 'ticket', 'attachment', 'create', $yatta_id, '--file', $filename ] );
 
     ok( !( $? >> 8 ), $err );
 
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'push', '--to', $sd_trac_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'push', '--to', $sd_trac_url ] );
     ok( !( $? >> 8 ), $err );
     diag($out);
     diag($err);
@@ -105,25 +113,33 @@ sub test_push_of_attachment {
 
 sub test_push_of_comment {
 
-    ( $ret, $out, $err )
-        = run_script( 'sd', [ 'ticket', 'comment', $yatta_id, '--content', "The text of the comment." ] );
+    ( $ret, $out, $err ) = run_script(
+        'sd',
+        [
+            'ticket',  'comment',
+            $yatta_id, '--content',
+            "The text of the comment."
+        ]
+    );
 
     ok( !( $? >> 8 ), $err );
 
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'push', '--to', $sd_trac_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'push', '--to', $sd_trac_url ] );
     ok( !( $? >> 8 ), $err );
     diag($out);
     diag($err);
     is( count_tickets_in_trac(), 1 );
     my $tickets = Net::Trac::TicketSearch->new( connection => $trac );
     my $result = $tickets->query( summary => { not => 'nonsense' } );
-    like( $tickets->results->[0]->comments->[0]->content, qr/The text of the comment./ );
+    like( $tickets->results->[0]->comments->[0]->content,
+        qr/The text of the comment./ );
 }
-
 
 sub count_tickets_in_sd {
     my $self = shift;
-    my ( $ret, $out, $err ) = run_script( 'sd' => [ 'ticket', 'list', '--regex', '.' ], );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd' => [ 'ticket', 'list', '--regex', '.' ], );
     my @lines = split( /\n/, $out );
     return scalar @lines;
 }

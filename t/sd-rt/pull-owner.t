@@ -9,7 +9,7 @@ use Prophet::Test;
 use File::Path qw(rmtree);
 
 BEGIN {
-    unless (eval 'use RT::Test tests => "no_declare"; 1') {
+    unless ( eval 'use RT::Test tests => "no_declare"; 1' ) {
         diag $@ if $ENV{'TEST_VERBOSE'};
         plan skip_all => 'requires RT 3.8 or newer to run tests.';
     }
@@ -25,8 +25,8 @@ use Prophet::Test;
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'}
-        = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag "export SD_REPO=" . $ENV{'PROPHET_REPO'} . "\n";
 }
 
@@ -42,24 +42,28 @@ $rt->login( username => 'root', password => 'password' );
 $url =~ s|http://|http://root:password@|;
 my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 
-my $root = RT::User->new( $RT::SystemUser );
+my $root = RT::User->new($RT::SystemUser);
 $root->LoadByEmail('root@localhost');
 ok $root->id, 'loaded root';
 
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $tid, "created ticket #$tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
@@ -74,19 +78,23 @@ ok $root->id, 'loaded root';
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Owner => $root->id,
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Owner   => $root->id,
     );
     ok $tid, "created ticket #$tid in RT";
     is $ticket->Owner, $root->id, 'owner is set';
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
@@ -101,27 +109,32 @@ ok $root->id, 'loaded root';
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $root );
+    my $ticket = RT::Ticket->new($root);
     my ($tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Owner => $root->id,
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Owner   => $root->id,
     );
     ok $tid, "created ticket #$tid in RT";
     is $ticket->Owner, $root->id, 'owner is set';
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
-    my ($res, $msg) = $ticket->SetOwner( $RT::Nobody->id );
+    my ( $res, $msg ) = $ticket->SetOwner( $RT::Nobody->id );
     ok $res, 'unset owner in RT' or diag "error: $msg";
 
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $info = get_ticket_info($sd_tid);
     ok !$info->{'metadata'}{'owner'}, 'owner is not set';
@@ -130,29 +143,33 @@ ok $root->id, 'loaded root';
     ok $res, 'deleted ticket in RT';
 }
 
-
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $root );
+    my $ticket = RT::Ticket->new($root);
     my ($tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $tid, "created ticket #$tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
-    my ($res, $msg) = $ticket->SetOwner( $root->id );
+    my ( $res, $msg ) = $ticket->SetOwner( $root->id );
     ok $res, 'set owner in RT' or diag "error: $msg";
 
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'owner'}, 'root@localhost', 'owner is set';
@@ -163,6 +180,6 @@ ok $root->id, 'loaded root';
 
 sub flush_sd {
     rmtree( $ENV{'SD_REPO'} );
-    run_script( 'sd', ['init', '--non-interactive' ] );
+    run_script( 'sd', [ 'init', '--non-interactive' ] );
 }
 

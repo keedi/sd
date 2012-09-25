@@ -3,13 +3,14 @@
 use strict;
 use warnings;
 
-open GETHELP, 'sd help |' ;
+open GETHELP, 'sd help |';
 my @cmds;
 
 # grab what helps exist from the help index
 while (<GETHELP>) {
     next if !m/sd help /;
-    (undef, undef, my $cmd, undef, my $desc) = split ' ', $_, 5;
+    ( undef, undef, my $cmd, undef, my $desc ) = split ' ', $_, 5;
+
     # push @cmds, [$cmd, $desc];
     push @cmds, $cmd;
 }
@@ -29,7 +30,7 @@ for (@cmds) {
 }
 
 sub process_help {
-    my ( $text ) = shift;
+    my ($text) = shift;
 
     # escape markdown metacharacters
     $text =~ s/_/\\_/g;
@@ -68,7 +69,7 @@ sub process_help {
 
 sub slurp {
     my $fh = shift;
-    local( $/ ) ;
+    local ($/);
     my $text = <$fh>;
 
     return $text;

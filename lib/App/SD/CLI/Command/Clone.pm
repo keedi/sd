@@ -5,13 +5,15 @@ with 'App::SD::CLI::NewReplicaCommand';
 
 sub ARG_TRANSLATIONS {
     shift->SUPER::ARG_TRANSLATIONS(),
-    # this arg is used in the new_replica_wizard sub
-    n => 'non-interactive',
-};
+
+      # this arg is used in the new_replica_wizard sub
+      n => 'non-interactive',
+      ;
+}
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->cli->get_script_name;
+    my $cmd  = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}clone --from <url> [--as <alias>] [--non-interactive] | --local

@@ -13,8 +13,11 @@ has sync_source => (
 
 sub integrate_ticket_create {
     my $self = shift;
-    my ( $change, $changeset )
-        = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
+    my ( $change, $changeset ) = validate_pos(
+        @_,
+        { isa => 'Prophet::Change' },
+        { isa => 'Prophet::ChangeSet' }
+    );
 
     # Build up a ticket object out of all the record's attributes
     my %args = (
@@ -26,7 +29,8 @@ sub integrate_ticket_create {
         %{ $self->_recode_props_for_create($change) }
     );
 
-    my $hm_user = $self->sync_source->user_info(email => $self->sync_source->foreign_username);
+    my $hm_user = $self->sync_source->user_info(
+        email => $self->sync_source->foreign_username );
 
     my @requesters;
     if ( $args{'requestor_id'} ) {
@@ -36,7 +40,9 @@ sub integrate_ticket_create {
 
         @requesters = Email::Address->parse( $args{'requestor_id'} );
         @requesters = grep {
-            lc( $_->address ) eq lc( $hm_user->{'email'} ) ? do { $pusher_is_requester = 1; 0 } : 1
+            lc( $_->address ) eq lc( $hm_user->{'email'} )
+              ? do { $pusher_is_requester = 1; 0 }
+              : 1
         } @requesters;
 
         unless ($pusher_is_requester) {
@@ -54,23 +60,28 @@ sub integrate_ticket_create {
             $args{'requestor_id'} = $hm_user->{'email'};
         }
         if (@requesters) {
-            warn "A ticket has more than one requestor when HM supports only one";
+            warn
+              "A ticket has more than one requestor when HM supports only one";
         }
     }
 
     my $task = $self->sync_source->hm->create( 'Task', %args );
+
     # a successful create just returns the task's data, and doesn't
     # have a 'success' member at all
     if ( $self->sync_source->request_failed($task) ) {
-        die "Couldn't create a task: " . $self->sync_source->decode_error($task);
+        die "Couldn't create a task: "
+          . $self->sync_source->decode_error($task);
     }
 
     my $tid = $task->{id};
 
     if (@requesters) {
         my $email = $self->comment_as_email(
-            {   creator => $hm_user->{'email'},
-                content => "Additional requestors: " . join( ', ', map $_->format, @requesters ),
+            {
+                creator => $hm_user->{'email'},
+                content => "Additional requestors: "
+                  . join( ', ', map $_->format, @requesters ),
             }
         );
         my $status = $self->sync_source->hm->act(
@@ -79,10 +90,11 @@ sub integrate_ticket_create {
             message => $email->as_string,
         );
         warn "Couldn't add a comment on the recently created HM task"
-            if $self->sync_source->request_failed($status);
+          if $self->sync_source->request_failed($status);
     }
 
-    my $txns = $self->sync_source->hm->search( 'TaskTransaction', task_id => $tid );
+    my $txns =
+      $self->sync_source->hm->search( 'TaskTransaction', task_id => $tid );
 
     # lalala
     $self->sync_source->record_pushed_transaction(
@@ -96,13 +108,16 @@ sub integrate_ticket_create {
 
 sub integrate_comment {
     my $self = shift;
-    my ( $change, $changeset )
-        = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
+    my ( $change, $changeset ) = validate_pos(
+        @_,
+        { isa => 'Prophet::Change' },
+        { isa => 'Prophet::ChangeSet' }
+    );
 
     my %props = map { $_->name => $_->new_value } $change->prop_changes;
 
     my $ticket_id = $self->sync_source->remote_id_for_uuid( $props{'ticket'} )
-        or die "Couldn't get remote id of SD ticket";
+      or die "Couldn't get remote id of SD ticket";
 
     my $email  = $self->comment_as_email( \%props );
     my $status = $self->sync_source->hm->act(
@@ -112,19 +127,23 @@ sub integrate_comment {
     );
     return $status->{'id'} unless $self->sync_source->request_failed($status);
 
-    die "Couldn't integrate comment: " . $self->sync_source->decode_error($status);
+    die "Couldn't integrate comment: "
+      . $self->sync_source->decode_error($status);
 }
 
 sub integrate_ticket_update {
     my $self = shift;
-    my ( $change, $changeset )
-        = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
+    my ( $change, $changeset ) = validate_pos(
+        @_,
+        { isa => 'Prophet::Change' },
+        { isa => 'Prophet::ChangeSet' }
+    );
 
     my %args = $self->translate_props($change);
     return unless keys %args;
 
     my $tid = $self->sync_source->remote_id_for_uuid( $change->record_uuid )
-        or die "Couldn't get remote id of SD ticket";
+      or die "Couldn't get remote id of SD ticket";
 
     my ( $seen_current, $dropped_all, @new_requestors ) = ( 0, 0 );
     if (   exists $args{'requestor_id'}
@@ -132,14 +151,16 @@ sub integrate_ticket_update {
         && length $args{'requestor_id'} )
     {
         my $task = $self->sync_source->hm->read( 'Task', id => $tid );
-        my $current_requestor = $self->sync_source->user_info( id => $task->{'requester_id'} );
+        my $current_requestor =
+          $self->sync_source->user_info( id => $task->{'requester_id'} );
 
         require Email::Address;
-        @new_requestors = Email::Address->parse( delete $args{'requestor_id'} );
+        @new_requestors =
+          Email::Address->parse( delete $args{'requestor_id'} );
         @new_requestors = grep {
             ( lc( $_->address ) eq lc( $current_requestor->{'email'} ) )
-                ? do { $seen_current = 1; 0; }
-                : 1
+              ? do { $seen_current = 1; 0; }
+              : 1
         } @new_requestors;
 
         unless ($seen_current) {
@@ -161,8 +182,9 @@ sub integrate_ticket_update {
             id => $tid,
             %args,
         );
-        die "Couldn't integrate ticket update: " . $self->sync_source->decode_error($status)
-            if $self->sync_source->request_failed($status);
+        die "Couldn't integrate ticket update: "
+          . $self->sync_source->decode_error($status)
+          if $self->sync_source->request_failed($status);
         $txn_id = $status->{'id'};
     }
 
@@ -173,8 +195,8 @@ sub integrate_ticket_update {
                 $seen_current
                 ? "New requestors in addition to the current: "
                 : "Requestors have been changed: "
-                )
-                . join( ', ', map $_->format, @new_requestors ),
+              )
+              . join( ', ', map $_->format, @new_requestors ),
         );
         $txn_id = $comment_id if $comment_id;
     } elsif ($dropped_all) {
@@ -201,14 +223,17 @@ sub record_comment {
         message => $email->as_string,
     );
     warn "Couldn't add a comment on the recently created HM task"
-        if $self->sync_source->request_failed($status);
+      if $self->sync_source->request_failed($status);
     return $status->{'id'};
 }
 
 sub integrate_attachment {
     my $self = shift;
-    my ( $change, $changeset )
-        = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
+    my ( $change, $changeset ) = validate_pos(
+        @_,
+        { isa => 'Prophet::Change' },
+        { isa => 'Prophet::ChangeSet' }
+    );
 
     unless ( $self->sync_source->user_info->{'pro_account'} ) {
         warn "Pro account is required to push attachments";
@@ -222,8 +247,9 @@ sub integrate_attachment {
         content_type => delete $props{'content_type'},
     };
 
-    my $ticket_id = $self->sync_source->remote_id_for_uuid( delete $props{'ticket'} )
-        or die "Couldn't get remote id of SD ticket";
+    my $ticket_id =
+      $self->sync_source->remote_id_for_uuid( delete $props{'ticket'} )
+      or die "Couldn't get remote id of SD ticket";
 
     my $status = $self->sync_source->hm->act(
         'CreateTaskAttachment',
@@ -232,7 +258,8 @@ sub integrate_attachment {
     );
     return $status->{'id'} unless $self->sync_source->request_failed($status);
 
-    die "Couldn't integrate attachment: " . $self->sync_source->decode_error($status);
+    die "Couldn't integrate attachment: "
+      . $self->sync_source->decode_error($status);
 }
 
 sub _recode_props_for_create {
@@ -255,7 +282,8 @@ sub _recode_props_for_create {
         }
     }
     if ( $source_props{'tag_not'} ) {
-        die "TODO: not sure what to do here and with other *_not search arguments";
+        die
+          "TODO: not sure what to do here and with other *_not search arguments";
     }
 
     return { %$attr, %source_props };

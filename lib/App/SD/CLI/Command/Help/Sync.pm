@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Sharing ticket databases');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 
     ${cmd}clone --from http://example.com/path/to/sd
       Create a new copy (replica) of a published SD replica from an
@@ -121,12 +121,12 @@ EOF
 
 }
 
-    # ${cmd}server --writable --port 9876
-    # ${cmd}server -w -p 9876
-    #   Start an sd replica server on port 9876, with UNAUTHENTICATED,
-    #   PUBLIC WRITE ACCESS via HTTP POST.  This command will make your
-    #   replica modifiable, browsable and pullable by ANYONE with remote
-    #   access to your computer.
+# ${cmd}server --writable --port 9876
+# ${cmd}server -w -p 9876
+#   Start an sd replica server on port 9876, with UNAUTHENTICATED,
+#   PUBLIC WRITE ACCESS via HTTP POST.  This command will make your
+#   replica modifiable, browsable and pullable by ANYONE with remote
+#   access to your computer.
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

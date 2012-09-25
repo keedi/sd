@@ -4,7 +4,7 @@ App::SD - Distributed ticket tracking system
 
 # VERSION
 
-version 0.76
+version 0.001
 
 # DESCRIPTION
 

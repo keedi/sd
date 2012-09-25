@@ -10,7 +10,7 @@ use Memoize;
 
 use Prophet::ChangeSet;
 
-use constant scheme => 'lighthouse';
+use constant scheme       => 'lighthouse';
 use constant pull_encoder => 'App::SD::Replica::lighthouse::PullEncoder';
 use constant push_encoder => 'App::SD::Replica::lighthouse::PushEncoder';
 
@@ -30,15 +30,14 @@ sub BUILD {
         require Net::Lighthouse::User;
     };
     if ($@) {
-        die "SD requires Net::Lighthouse to sync with a Lighthouse server.\n".
-        "'cpan Net::Lighthouse' may sort this out for you";
+        die "SD requires Net::Lighthouse to sync with a Lighthouse server.\n"
+          . "'cpan Net::Lighthouse' may sort this out for you";
     }
-
 
     my ( $auth, $account, $project, $query ) =
       $self->{url} =~ m{^lighthouse:(?:(.*)@)?(.*?)/(.*?)(?:/(.*))?$}
       or die
-"Can't parse lighthouse server spec. Expected lighthouse:email:password\@account/project/query or lighthouse:token\@account/project/query.";
+      "Can't parse lighthouse server spec. Expected lighthouse:email:password\@account/project/query or lighthouse:token\@account/project/query.";
     my $server = "http://$account.lighthouseapp.com";
     $self->query( $query || 'all' );
 
@@ -46,8 +45,7 @@ sub BUILD {
     if ($auth) {
         if ( $auth =~ /@/ ) {
             ( $email, $password ) = split /:/, $auth;
-        }
-        else {
+        } else {
             $token = $auth;
         }
     }
@@ -55,11 +53,10 @@ sub BUILD {
     unless ( $token || $password ) {
         if ($email) {
             ( undef, $password ) = $self->prompt_for_login(
-                uri            => $server,
-                username       => $email,
+                uri      => $server,
+                username => $email,
             );
-        }
-        else {
+        } else {
             ( undef, $token ) = $self->prompt_for_login(
                 uri           => $server,
                 username      => 'not important',
@@ -71,8 +68,8 @@ sub BUILD {
     }
 
     $self->remote_url($server);
-    $self->account( $account );
-    $self->project( $project );
+    $self->account($account);
+    $self->project($project);
 
     my $lighthouse = Net::Lighthouse::Project->new(
         auth => {
@@ -81,19 +78,18 @@ sub BUILD {
         },
         account => $account,
     );
-    $lighthouse->load( $project );
-    $self->lighthouse( $lighthouse );
+    $lighthouse->load($project);
+    $self->lighthouse($lighthouse);
 }
 
-
 sub get_txn_list_by_date {
-    my $self   = shift;
-    my $ticket = shift;
+    my $self       = shift;
+    my $ticket     = shift;
     my $ticket_obj = $self->lighthouse->ticket;
     $ticket_obj->load($ticket);
-        
+
     my $sequence = 0;
-    my @txns = map {
+    my @txns     = map {
         {
             id      => $sequence++,
             creator => $_->creator_name,
@@ -123,26 +119,28 @@ sub get_txn_list_by_date {
 
 sub foreign_username {
     my $self = shift;
-    my $user =
-      Net::Lighthouse::User->new( map { $_ => $self->lighthouse->$_ }
-          grep { $self->lighthouse->$_ } qw/account email password token/ );
+    my $user = Net::Lighthouse::User->new(
+        map { $_ => $self->lighthouse->$_ }
+        grep { $self->lighthouse->$_ } qw/account email password token/
+    );
 
     if ( $user->token ) {
+
         # so we use token, let's try to find user's name
         require Net::Lighthouse::Token;
         my $token = Net::Lighthouse::Token->new(
             map { $_ => $self->lighthouse->$_ }
-              grep { $self->lighthouse->$_ } qw/account token/
+            grep { $self->lighthouse->$_ } qw/account token/
         );
         $token->load( $self->lighthouse->token );
         my $user = Net::Lighthouse::User->new(
             map { $_ => $self->lighthouse->$_ }
-              grep { $self->lighthouse->$_ } qw/account token/
+            grep { $self->lighthouse->$_ } qw/account token/
         );
         $user->load( $token->user_id );
         return $user->name;
-    }
-    else {
+    } else {
+
         # TODO we can't get user's name via email :/
         # wish they augment the api so we can load via email
         return $1 if $user->email =~ /(.*?)@/;
@@ -151,20 +149,21 @@ sub foreign_username {
 
 sub _uuid_url {
     my $self = shift;
-    Carp::cluck "- can't make a uuid for this" unless ($self->remote_url && $self->account && $self->project );
-    return  join( '/', $self->remote_url, $self->project );
+    Carp::cluck "- can't make a uuid for this"
+      unless ( $self->remote_url && $self->account && $self->project );
+    return join( '/', $self->remote_url, $self->project );
 }
 
 sub remote_uri_path_for_comment {
     my $self = shift;
-    my $id = shift;
-    return "/comment/".$id;
+    my $id   = shift;
+    return "/comment/" . $id;
 }
 
 sub remote_uri_path_for_id {
     my $self = shift;
-    my $id = shift;
-    return "/ticket/".$id;
+    my $id   = shift;
+    return "/ticket/" . $id;
 }
 
 sub database_settings {

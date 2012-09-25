@@ -18,8 +18,8 @@ use Net::Lighthouse::Project;
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'}
-        = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag "export SD_REPO=" . $ENV{'PROPHET_REPO'} . "\n";
 }
 
@@ -28,9 +28,10 @@ my $project = Net::Lighthouse::Project->new(
     account => 'sunnavy',
     token   => $ENV{SD_TEST_LIGHTHOUSE_PUSH_TOKEN},
 );
-ok( $project->load( 'sd' ), 'load project sd' );
+ok( $project->load('sd'), 'load project sd' );
+
 # we use $time as tag, so we just pull the ticket we want
-my $time = time;
+my $time   = time;
 my $ticket = $project->ticket;
 ok(
     $ticket->create(
@@ -50,7 +51,8 @@ my $sd_lighthouseg_url =
 
 my ( $ret, $out, $err );
 ( $ret, $out, $err ) =
-  run_script( 'sd', [ 'clone', '--from', $sd_lighthouseg_url, '--non-interactive' ] );
+  run_script( 'sd',
+    [ 'clone', '--from', $sd_lighthouseg_url, '--non-interactive' ] );
 
 my $first_id;
 diag($err) if ($err);
@@ -60,18 +62,20 @@ run_output_matches(
     [qr/(.*?)(?{ $first_id = $1 }) create remotely/]
 );
 
-( $ret, $out, $err ) =
-  run_script( 'sd', [ 'ticket', 'comments', $first_id ] );
+( $ret, $out, $err ) = run_script( 'sd', [ 'ticket', 'comments', $first_id ] );
 like( $out, qr/comment remotely/s, 'comments pulled' );
 
 ( $ret, $out, $err ) =
   run_script( 'sd', [ 'pull', '--from', $sd_lighthouseg_url, '--dry-run' ] );
 diag($err);
 unlike(
-    $out, qr/(comment remotely).*\1/s, 'not pulling comments pulled again'
+    $out,
+    qr/(comment remotely).*\1/s,
+    'not pulling comments pulled again'
 );
 
-run_script( 'sd', [ 'ticket', 'comment', $first_id, '-m', 'comment from sd' ] );
+run_script( 'sd',
+    [ 'ticket', 'comment', $first_id, '-m', 'comment from sd' ] );
 ( $ret, $out, $err ) =
   run_script( 'sd', [ 'push', '--to', $sd_lighthouseg_url, '--dry-run' ] );
 like( $out, qr/"content" set to "comment from sd"/, 'comment to be pushed' );
@@ -99,11 +103,9 @@ run_output_matches(
     [qr/(.*?)(?{ $from_sd = $1 }) create from sd/]
 );
 
-run_output_matches(
-    'sd',
+run_output_matches( 'sd',
     [ 'ticket', 'comment', $from_sd, '-m', 'comment from sd', ],
-    [qr/Created comment/]
-);
+    [qr/Created comment/] );
 
 ( $ret, $out, $err ) =
   run_script( 'sd', [ 'push', '--to', $sd_lighthouseg_url, '--dry-run' ] );
@@ -119,7 +121,7 @@ like(
     qr/"content" set to "comment from sd"/,
     "comment to $from_sd to be pushed"
 );
-unlike( $out, qr/create remotely/, 'pulled tickets not pushed' );
+unlike( $out, qr/create remotely/,   'pulled tickets not pushed' );
 unlike( $out, qr/comment remotely/s, 'pulled comments not pushed' );
 
 ( $ret, $out, $err ) =
@@ -127,15 +129,14 @@ unlike( $out, qr/comment remotely/s, 'pulled comments not pushed' );
 diag($out);
 diag($err);
 
-
 ( $ret, $out, $err ) =
   run_script( 'sd', [ 'pull', '--from', $sd_lighthouseg_url, '--dry-run' ] );
-unlike( $out, qr/create from sd/, 'pushed tickets not pulled' );
+unlike( $out, qr/create from sd/,  'pushed tickets not pulled' );
 unlike( $out, qr/comment from sd/, 'pushed tickets not pulled' );
 diag($err);
 
 my @tickets = $project->tickets( query => "tagged:$time" );
-for my $ticket ( @tickets ) {
+for my $ticket (@tickets) {
     $ticket->load( $ticket->number );
     if ( $ticket->title =~ /create from sd/ ) {
         is( scalar @{ $ticket->versions }, 2, 'comment is pushed' );

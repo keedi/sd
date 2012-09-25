@@ -5,7 +5,7 @@ with 'App::SD::CLI::NewReplicaCommand';
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->cli->get_script_name;
+    my $cmd  = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}init [--non-interactive]
@@ -18,8 +18,9 @@ END_USAGE
 
 sub ARG_TRANSLATIONS {
     shift->SUPER::ARG_TRANSLATIONS(),
-    n => 'non-interactive',
-};
+      n => 'non-interactive',
+      ;
+}
 
 override run => sub {
     my $self = shift;

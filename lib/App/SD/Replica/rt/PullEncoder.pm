@@ -546,7 +546,7 @@ sub resolve_user_id_to {
     my $self = shift;
     my $attr = shift;
     my $id   = shift;
-    return undef unless $id;
+    return unless $id;
 
     local $@;
     my $user = eval {

@@ -166,7 +166,7 @@ sub _user_info {
     my $self  = shift;
     my $key   = shift;
     my $value = shift;
-    return undef unless defined $value;
+    return unless defined $value;
     my $status = $self->hm->search( 'User', $key => $value );
     unless ( $status->[0]->{'id'} ) {
 

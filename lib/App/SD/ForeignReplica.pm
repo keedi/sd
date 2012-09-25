@@ -353,7 +353,7 @@ sub remote_id_for_uuid {
     $ticket->load( $uuid_or_luid =~ /^\d+$/ ? 'luid' : 'uuid', $uuid_or_luid )
       or do {
         warn "couldn't load ticket #$uuid_or_luid";
-        return undef;
+        return;
       };
 
     my $prop = $self->uuid . '-id';

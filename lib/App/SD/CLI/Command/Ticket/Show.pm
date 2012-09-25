@@ -6,23 +6,22 @@ with 'App::SD::CLI::Model::Ticket';
 
 sub ARG_TRANSLATIONS {
     shift->SUPER::ARG_TRANSLATIONS(),
-        a => 'all-props',
-        s => 'skip-history',
-        h => 'with-history',
-        b => 'batch';
+      a => 'all-props',
+      s => 'skip-history',
+      h => 'with-history',
+      b => 'batch';
 }
 
-sub by_creation_date { 
-    ($a->can('created') ? $a->created : $a->prop('created') )
-    cmp 
-    ($b->can('created') ? $b->created : $b->prop('created') )
+sub by_creation_date {
+    ( $a->can('created')      ? $a->created : $a->prop('created') )
+      cmp( $b->can('created') ? $b->created : $b->prop('created') );
 }
 
 sub usage_msg {
-    my $self = shift;
-    my $cmd = shift || 'show';
+    my $self   = shift;
+    my $cmd    = shift || 'show';
     my $script = $self->cli->get_script_name;
-    my $type = $self->type ? $self->type . q{ } : q{};
+    my $type   = $self->type ? $self->type . q{ } : q{};
 
     return <<"END_USAGE";
 usage: ${script}${type}${cmd} <record-id> [options]
@@ -52,7 +51,8 @@ override run => sub {
 
     print "\n= METADATA\n\n";
     super();
-    my @history = sort by_creation_date ( @{ $record->comments }, $record->changesets );
+    my @history =
+      sort by_creation_date ( @{ $record->comments }, $record->changesets );
 
     my @attachments = sort by_creation_date @{ $record->attachments };
     if (@attachments) {
@@ -63,12 +63,16 @@ override run => sub {
     # allow user to not display history by specifying the --skip-history
     # arg or setting ticket.no-implicit-history-display config item to a
     # true value (can be overridden with --with-history)
-    if (!$self->has_arg('skip-history')
-        && (  !$self->app_handle->config->get(
+    if (
+        !$self->has_arg('skip-history')
+        && (
+            !$self->app_handle->config->get(
                 key => 'ticket.no-implicit-history-display',
-                as => 'bool',
-            ) || $self->has_arg('with-history') )
+                as  => 'bool',
+            )
+            || $self->has_arg('with-history')
         )
+      )
     {
         print "\n= HISTORY\n\n";
         foreach my $item (@history) {
@@ -79,17 +83,16 @@ override run => sub {
             }
         }
     }
-    };
-
+};
 
 sub format_prop {
     my $self  = shift;
     my $field = shift;
     my $value = shift;
-    if ($self->has_arg('batch')) {
+    if ( $self->has_arg('batch') ) {
         return "$field: $value\n";
     } else {
-        return sprintf("%18.18s: %s\n",$field, $value);
+        return sprintf( "%18.18s: %s\n", $field, $value );
     }
 }
 
@@ -97,23 +100,25 @@ sub show_history_entry {
     my $self      = shift;
     my $ticket    = shift;
     my $changeset = shift;
-    my $body = '';
-    
+    my $body      = '';
+
     for my $change ( $changeset->changes ) {
         next if $change->record_uuid ne $ticket->uuid;
 
-        $body .= App::SD::CLI->format_change(change => $change) || next;
+        $body .= App::SD::CLI->format_change( change => $change ) || next;
         $body .= "\n";
     }
 
     return '' if !$body;
 
     $self->history_entry_header(
-         $changeset->creator,
+        $changeset->creator,
         $changeset->created,
         $changeset->original_sequence_no,
-        $self->app_handle->display_name_for_replica($changeset->original_source_uuid),
-    
+        $self->app_handle->display_name_for_replica(
+            $changeset->original_source_uuid
+        ),
+
     );
 
     print $body;
@@ -126,20 +131,24 @@ sub show_attachment {
 }
 
 sub show_comment {
-    my $self = shift;
-    my $comment = shift;
+    my $self         = shift;
+    my $comment      = shift;
     my $creator      = $comment->prop('creator');
     my $created      = $comment->prop('created');
     my $content_type = $comment->prop('content_type') || 'text/plain';
-    my $content = $comment->prop('content') || '';
+    my $content      = $comment->prop('content') || '';
 
+    my ($creation) = $comment->changesets( limit => 1 );
 
-    my ($creation) = $comment->changesets(limit => 1);
+    $self->history_entry_header(
+        $creator, $created,
+        $creation->original_sequence_no,
+        $self->app_handle->display_name_for_replica(
+            $creation->original_source_uuid
+        )
+    );
 
-    $self->history_entry_header($creator,
-        $created,$creation->original_sequence_no, $self->app_handle->display_name_for_replica($creation->original_source_uuid));
-
-    print $self->format_comment($content_type, $content);
+    print $self->format_comment( $content_type, $content );
     print "\n\n";
 }
 
@@ -154,7 +163,8 @@ sub format_comment {
         $content =~ s|</?pre.*?>|\n|gismx;
         $content =~ s|</?b\s*>|*|gismx;
         $content =~ s|</?i\s*>|_|gismx;
-        $content =~ s|<a(?:.*?)href="(.*?)".*?>(.*?)</a.*?>|$2 [link: $1 ]|gismx;
+        $content =~
+          s|<a(?:.*?)href="(.*?)".*?>(.*?)</a.*?>|$2 [link: $1 ]|gismx;
         $content =~ s|<.*?>||gismx;
         $content =~ s|\n\n|\n|gismx;
     }
@@ -162,20 +172,19 @@ sub format_comment {
     return $content;
 }
 
-
 sub history_entry_header {
     my $self = shift;
-    my ($creator, $created, $sequence, $source) = (@_);
-    print "="x80;
+    my ( $creator, $created, $sequence, $source ) = (@_);
+    print "=" x 80;
     print "\n";
-     printf "%s at %s\t\(%d@%s)\n",
-        ( $creator || '(unknown)' ),
-        $created,
-        $sequence,
-        $source;
-    print "-"x80;
+    printf "%s at %s\t\(%d@%s)\n",
+      ( $creator || '(unknown)' ),
+      $created,
+      $sequence,
+      $source;
+    print "-" x 80;
     print "\n";
-    }
+}
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

@@ -2,11 +2,11 @@ package App::SD::CLI::Command::Ticket::Details;
 use Any::Moose;
 extends 'App::SD::CLI::Command::Ticket::Show';
 
-sub by_creation_date { $a->prop('created') cmp $b->prop('created') };
+sub by_creation_date { $a->prop('created') cmp $b->prop('created') }
 
 sub usage_msg {
     my $self = shift;
-    my ($cmd, $type_and_subcmd) = $self->get_cmd_and_subcmd_names;
+    my ( $cmd, $type_and_subcmd ) = $self->get_cmd_and_subcmd_names;
 
     # XXX TODO Review these options
     return <<"END_USAGE";
@@ -29,14 +29,13 @@ override run => sub {
     print "\n=head1 METADATA\n\n";
     super();
 
-    my @attachments = sort by_creation_date @{$record->attachments};
+    my @attachments = sort by_creation_date @{ $record->attachments };
     if (@attachments) {
         print "\n=head1 ATTACHMENTS\n\n";
-        print $_->format_summary . "\n"
-            for @attachments;
+        print $_->format_summary . "\n" for @attachments;
     }
 
-    my @comments = sort by_creation_date @{$record->comments};
+    my @comments = sort by_creation_date @{ $record->comments };
     if (@comments) {
         print "\n=head1 COMMENTS\n\n";
         for my $comment (@comments) {

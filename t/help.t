@@ -7,6 +7,6 @@ use App::SD::Test;
 use App::SD;
 no warnings 'once';
 
-my ($ret,$out,$err) = run_script( 'sd', [ 'help']);
+my ( $ret, $out, $err ) = run_script( 'sd', ['help'] );
 
-like($out, qr/sd $App::SD::VERSION/sm);
+like( $out, qr/sd $App::SD::VERSION/sm );

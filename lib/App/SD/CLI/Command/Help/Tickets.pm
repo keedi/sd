@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Creating and Updating tickets');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
     ${cmd}ticket create
       Invokes a text editor with a ticket creation template.
       Note that 'new' is an alias for 'create'.

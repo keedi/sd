@@ -9,7 +9,7 @@ use Prophet::Test;
 use File::Path qw(rmtree);
 
 BEGIN {
-    unless (eval 'use RT::Test tests => "no_declare"; 1') {
+    unless ( eval 'use RT::Test tests => "no_declare"; 1' ) {
         diag $@ if $ENV{'TEST_VERBOSE'};
         plan skip_all => 'requires RT 3.8 or newer to run tests.';
     }
@@ -25,8 +25,8 @@ use Prophet::Test;
 
 BEGIN {
     require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'}
-        = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $ENV{'SD_REPO'} =
+      File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
     diag "export SD_REPO=" . $ENV{'PROPHET_REPO'} . "\n";
 }
 
@@ -46,17 +46,21 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $tid, "created ticket #$tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $flyman_id;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $flyman_id = $1 }) Fly Man new/]
     );
     ok $flyman_id, 'pulled ticket';
@@ -69,25 +73,28 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue     => 'General',
+        Status    => 'new',
+        Subject   => 'Fly Man',
         Requestor => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'reporter'}, 'test@localhost',
-        'correct requestor';
+    is $info->{'metadata'}{'reporter'}, 'test@localhost', 'correct requestor';
 
     my ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -97,25 +104,29 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Requestor => ['test@localhost', 'another@localhost'],
+        Queue     => 'General',
+        Status    => 'new',
+        Subject   => 'Fly Man',
+        Requestor => [ 'test@localhost', 'another@localhost' ],
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'reporter'}, 'another@localhost, test@localhost',
-        'correct requestors';
+      'correct requestors';
 
     my ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -123,29 +134,34 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 
 # create, add requestor, pull
 {
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue     => 'General',
+        Status    => 'new',
+        Subject   => 'Fly Man',
         Requestor => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($res) = $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
     ok $res, "added requestor";
 
     flush_sd();
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'reporter'}, 'another@localhost, test@localhost',
-        'correct requestor';
+      'correct requestor';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -155,34 +171,39 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue     => 'General',
+        Status    => 'new',
+        Subject   => 'Fly Man',
         Requestor => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'reporter'}, 'test@localhost',
-        'correct requestor';
+    is $info->{'metadata'}{'reporter'}, 'test@localhost', 'correct requestor';
 
-    my ($res) = $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
     ok $res, "added requestor";
 
-    ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'reporter'}, 'another@localhost, test@localhost',
-        'correct requestor';
+      'correct requestor';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -192,17 +213,21 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
@@ -210,14 +235,16 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
     my $info = get_ticket_info($sd_tid);
     ok !$info->{'metadata'}{'reporter'}, 'correct requestor';
 
-    my ($res) = $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
     ok $res, "added requestor";
 
-    ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'reporter'}, 'another@localhost',
-        'correct requestor';
+      'correct requestor';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -227,27 +254,32 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($res) = $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Requestor', Email => 'another@localhost' );
     ok $res, "added requestor";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'reporter'}, 'another@localhost',
-        'correct requestor';
+      'correct requestor';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -257,30 +289,35 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue     => 'General',
+        Status    => 'new',
+        Subject   => 'Fly Man',
         Requestor => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'reporter'}, 'test@localhost',
-        'correct requestor';
+    is $info->{'metadata'}{'reporter'}, 'test@localhost', 'correct requestor';
 
-    my ($res) = $ticket->DeleteWatcher( Type => 'Requestor', Email => 'test@localhost' );
+    my ($res) =
+      $ticket->DeleteWatcher( Type => 'Requestor', Email => 'test@localhost' );
     ok $res, "deleted requestor";
 
-    ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     $info = get_ticket_info($sd_tid);
     ok !$info->{'metadata'}{'reporter'}, 'correct requestor';
@@ -293,25 +330,28 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Cc => 'test@localhost',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Cc      => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'cc'}, 'test@localhost',
-        'correct cc';
+    is $info->{'metadata'}{'cc'}, 'test@localhost', 'correct cc';
 
     my ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -321,25 +361,29 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Cc => ['test@localhost', 'another@localhost'],
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Cc      => [ 'test@localhost', 'another@localhost' ],
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'cc'}, 'another@localhost, test@localhost',
-        'correct ccs';
+      'correct ccs';
 
     my ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -349,29 +393,34 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Cc => 'test@localhost',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Cc      => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($res) = $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
     ok $res, "added cc";
 
     flush_sd();
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'cc'}, 'another@localhost, test@localhost',
-        'correct cc';
+      'correct cc';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -381,34 +430,39 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Cc => 'test@localhost',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Cc      => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'cc'}, 'test@localhost',
-        'correct cc';
+    is $info->{'metadata'}{'cc'}, 'test@localhost', 'correct cc';
 
-    my ($res) = $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
     ok $res, "added cc";
 
-    ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     $info = get_ticket_info($sd_tid);
     is $info->{'metadata'}{'cc'}, 'another@localhost, test@localhost',
-        'correct cc';
+      'correct cc';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -418,17 +472,21 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
@@ -436,14 +494,15 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
     my $info = get_ticket_info($sd_tid);
     ok !$info->{'metadata'}{'cc'}, 'correct cc';
 
-    my ($res) = $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
     ok $res, "added cc";
 
-    ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'cc'}, 'another@localhost',
-        'correct cc';
+    is $info->{'metadata'}{'cc'}, 'another@localhost', 'correct cc';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -453,27 +512,31 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($res) = $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
+    my ($res) =
+      $ticket->AddWatcher( Type => 'Cc', Email => 'another@localhost' );
     ok $res, "added cc";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'cc'}, 'another@localhost',
-        'correct cc';
+    is $info->{'metadata'}{'cc'}, 'another@localhost', 'correct cc';
 
     ($res) = $ticket->SetStatus('deleted');
     ok $res, 'deleted ticket in RT';
@@ -483,30 +546,35 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 {
     flush_sd();
 
-    my $ticket = RT::Ticket->new( $RT::SystemUser );
+    my $ticket = RT::Ticket->new($RT::SystemUser);
     my ($rt_tid) = $ticket->Create(
-        Queue => 'General', Status => 'new', Subject => 'Fly Man',
-        Cc => 'test@localhost',
+        Queue   => 'General',
+        Status  => 'new',
+        Subject => 'Fly Man',
+        Cc      => 'test@localhost',
     );
     ok $rt_tid, "created ticket #$rt_tid in RT";
 
-    my ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    my ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     my $sd_tid;
     run_output_matches(
-        'sd', [qw(ticket list --regex .)],
+        'sd',
+        [qw(ticket list --regex .)],
         [qr/(.*?)(?{ $sd_tid = $1 }) Fly Man new/]
     );
     ok $sd_tid, 'pulled ticket';
 
     my $info = get_ticket_info($sd_tid);
-    is $info->{'metadata'}{'cc'}, 'test@localhost',
-        'correct cc';
+    is $info->{'metadata'}{'cc'}, 'test@localhost', 'correct cc';
 
-    my ($res) = $ticket->DeleteWatcher( Type => 'Cc', Email => 'test@localhost' );
+    my ($res) =
+      $ticket->DeleteWatcher( Type => 'Cc', Email => 'test@localhost' );
     ok $res, "deleted cc";
 
-    ($ret, $out, $err) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
 
     $info = get_ticket_info($sd_tid);
     ok !$info->{'metadata'}{'cc'}, 'correct cc';
@@ -517,6 +585,6 @@ my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 
 sub flush_sd {
     rmtree( $ENV{'SD_REPO'} );
-    run_script( 'sd', ['init', '--non-interactive' ] );
+    run_script( 'sd', [ 'init', '--non-interactive' ] );
 }
 

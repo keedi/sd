@@ -5,9 +5,9 @@ extends 'App::SD::CLI::Command::Help';
 sub run {
     my $self = shift;
     $self->print_header('Configuration Options');
-    my ${cmd}= $self->cli->get_script_name;
+    my ${cmd} = $self->cli->get_script_name;
 
-print <<EOF
+    print <<EOF
 SD supports a layered configuration system with three configuration
 files: a global file (/etc/sdrc), a user-wide configuration file
 (\$HOME/.sdrc) and a per-replica configuration file (/path/to/replica/config).

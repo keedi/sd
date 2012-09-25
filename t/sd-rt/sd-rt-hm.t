@@ -9,7 +9,7 @@ use Prophet::Test;
 use App::SD::Test;
 
 BEGIN {
-    unless (eval 'use RT::Test tests => "no_declare"; 1') {
+    unless ( eval 'use RT::Test tests => "no_declare"; 1' ) {
         diag $@;
         plan skip_all => 'requires RT 3.8 to run tests.';
     }
@@ -17,7 +17,8 @@ BEGIN {
 
 BEGIN {
     unless ( $ENV{'JIFTY_APP_ROOT'} ) {
-        plan skip_all => "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
+        plan skip_all =>
+          "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
     }
     require File::Temp;
     eval "use Jifty;";
@@ -25,7 +26,6 @@ BEGIN {
 }
 
 plan tests => 10;
-
 
 no warnings 'once';
 
@@ -63,28 +63,34 @@ my $ticket = RT::Client::REST::Ticket->new(
 my $root = BTDT::CurrentUser->superuser;
 my $as_root = BTDT::Model::User->new( current_user => $root );
 $as_root->load_by_cols( email => 'onlooker@example.com' );
-my ( $val, $msg ) = $as_root->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
+my ( $val, $msg ) =
+  $as_root->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
 ok( $val, $msg );
 my $GOODUSER = BTDT::CurrentUser->new( email => 'onlooker@example.com' );
-$GOODUSER->user_object->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
+$GOODUSER->user_object->set_accepted_eula_version(
+    Jifty->config->app('EULAVersion') );
 my $task = BTDT::Model::Task->new( current_user => $GOODUSER );
 $task->create(
     summary     => "YATTA",
     description => '',
 );
 
-my ( $bob_yatta_id, $bob_flyman_id, $flyman_uuid, $yatta_uuid, $alice_yatta_id, $alice_flyman_id );
+my (
+    $bob_yatta_id, $bob_flyman_id,  $flyman_uuid,
+    $yatta_uuid,   $alice_yatta_id, $alice_flyman_id
+);
 my ( $ret, $out, $err );
 
 as_alice {
     local $ENV{SD_REPO} = $ENV{PROPHET_REPO};
-    ( $ret, $out, $err ) = run_script('sd',['init', '--non-interactive']);
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'init', '--non-interactive' ] );
     diag($err) if ($err);
 };
 
 as_bob {
     local $ENV{SD_REPO} = $ENV{PROPHET_REPO};
-    ( $ret, $out, $err ) = run_script( 'sd',
+    ( $ret, $out, $err ) =
+      run_script( 'sd',
         [ 'clone', '--from', repo_uri_for('alice'), '--non-interactive' ] );
     diag($err) if ($err);
 };
@@ -92,52 +98,65 @@ as_bob {
 # now the tests, bob syncs with rt, alice syncs with hm
 as_alice {
     local $ENV{SD_REPO} = $ENV{PROPHET_REPO};
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_hm_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_hm_url ] );
     diag($err) if ($err);
-    run_output_matches( 'sd', [ 'ticket', 'list', '--regex', '.' ], [qr/^(.*?)(?{ $alice_yatta_id = $1 }) YATTA .*/] );
+    run_output_matches(
+        'sd',
+        [ 'ticket', 'list', '--regex', '.' ],
+        [qr/^(.*?)(?{ $alice_yatta_id = $1 }) YATTA .*/]
+    );
     $yatta_uuid = get_uuid_for_luid($alice_yatta_id);
 };
 
 as_bob {
     local $ENV{SD_REPO} = $ENV{PROPHET_REPO};
     diag("Bob pulling from RT");
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', $sd_rt_url ] );
     diag($err) if ($err);
-    run_output_matches( 'sd', [ 'ticket', 'list', '--regex', '.' ], [qr/^(.*?)(?{ $bob_flyman_id = $1 }) Fly Man new/] );
+    run_output_matches(
+        'sd',
+        [ 'ticket', 'list', '--regex', '.' ],
+        [qr/^(.*?)(?{ $bob_flyman_id = $1 }) Fly Man new/]
+    );
     diag("Bob pulling from alice");
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', repo_uri_for('alice')] );
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', repo_uri_for('alice') ] );
 
     $flyman_uuid = get_uuid_for_luid($bob_flyman_id);
     my $bob_yatta_id = get_luid_for_uuid($yatta_uuid);
 
     run_output_matches_unordered(
         'sd',
-        [ 'ticket',                             'list', '--regex', '.' ],
-        [ reverse sort "$bob_yatta_id YATTA open", "$bob_flyman_id Fly Man new" ]
+        [ 'ticket', 'list', '--regex', '.' ],
+        [
+            reverse sort "$bob_yatta_id YATTA open",
+            "$bob_flyman_id Fly Man new"
+        ]
     );
-
 
     diag("Bob pushing to RT");
     ( $ret, $out, $err ) = run_script( 'sd', [ 'push', '--to', $sd_rt_url ] );
     diag($err) if ($err);
 
     my @ids = $rt->search(
-        type => 'ticket',
+        type  => 'ticket',
         query => "Subject LIKE 'YATTA'",
     );
-    is(@ids, 1, "pushed YATTA ticket to RT");
+    is( @ids, 1, "pushed YATTA ticket to RT" );
 };
 
 as_alice {
     local $ENV{SD_REPO} = $ENV{'PROPHET_REPO'};
-    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', '--from', repo_uri_for('bob'), '--force' ] );
-
+    ( $ret, $out, $err ) =
+      run_script( 'sd', [ 'pull', '--from', repo_uri_for('bob'), '--force' ] );
 
     $alice_flyman_id = get_luid_for_uuid($flyman_uuid);
 
     run_output_matches_unordered(
         'sd',
-        [ 'ticket',                             'list', '--regex', '.' ],
+        [ 'ticket', 'list', '--regex', '.' ],
         [ sort "$alice_yatta_id YATTA open", "$alice_flyman_id Fly Man new" ]
     );
 
