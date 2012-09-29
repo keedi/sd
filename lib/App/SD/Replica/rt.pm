@@ -116,7 +116,7 @@ sub remote_uri_path_for_id {
 =head1 NOTES ON PUSH
 
 If the remote storage (RT) can not represent a whole changeset along with the
-prophet changeset uuid, then we need to  create a seperate locally(?) stored
+prophet changeset uuid, then we need to  create a separate locally(?) stored
 map of:     remote-subchangeset-identifier to changeset uuid.     remote id to
 prophet record uuid
 
